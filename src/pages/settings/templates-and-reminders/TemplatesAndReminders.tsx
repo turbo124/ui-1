@@ -35,6 +35,8 @@ import { commonVariables } from './common/constants/variables/common-variables';
 import { paymentVariables } from './common/constants/variables/payment-variables';
 import Toggle from '$app/components/forms/Toggle';
 import frequencies from '$app/common/constants/frequency';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const REMINDERS = ['reminder1', 'reminder2', 'reminder3'];
 
@@ -163,14 +165,19 @@ export function TemplatesAndReminders() {
 
         <Element leftSide={t('body')}>
           {canChangeEmailTemplate ? (
-            <MarkdownEditor
-              value={templateBody?.body}
-              onChange={(value) =>
+            // <MarkdownEditor
+            //   value={templateBody?.body}
+            //   onChange={(value) =>
+            //     setTemplateBody(
+            //       (current) => current && { ...current, body: value }
+            //     )
+            //   }
+            // />
+            <ReactQuill theme="snow" value={templateBody?.body} onChange={(value) =>
                 setTemplateBody(
                   (current) => current && { ...current, body: value }
                 )
-              }
-            />
+              } />
           ) : (
             <div className="flex flex-col items-start">
               <span className="text-gray-500 text-sm">
