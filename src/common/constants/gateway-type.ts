@@ -33,4 +33,9 @@ export default {
   [GatewayType.BECS]: 'becs',
   [GatewayType.InstantBankPay]: 'instant_bank_pay',
   [GatewayType.FPX]: 'fpx',
+  [GatewayType.MYBANK]: 'mybank',
+  [GatewayType.PAYLATER]: 'paypal_paylater',
+  [GatewayType.VENMO]: 'payment_type_Venmo',
+  [GatewayType.MERCADOPAGO]: 'mercado_pago',
+
 };
