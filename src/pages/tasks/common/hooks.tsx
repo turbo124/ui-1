@@ -89,6 +89,7 @@ export function useAllTaskColumns() {
     'is_running',
     'rate',
     'updated_at',
+    'user',
   ] as const;
 
   return taskColumns;
@@ -269,6 +270,12 @@ export function useTaskColumns() {
       id: 'updated_at',
       label: t('updated_at'),
       format: (value) => date(value, dateFormat),
+    },
+    {
+      column: 'user',
+      id: 'user_id',
+      label: t('user'),
+      format: (value, task) => `${task.user?.first_name} ${task.user?.last_name}`,
     },
   ];
 

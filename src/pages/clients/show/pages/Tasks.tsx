@@ -26,7 +26,7 @@ export default function Tasks() {
     <DataTable
       resource="task"
       endpoint={route(
-        '/api/v1/tasks?include=status,client&client_id=:id&sort=id|desc',
+        '/api/v1/tasks?include=status,client,user&client_id=:id&sort=id|desc',
         {
           id,
         }

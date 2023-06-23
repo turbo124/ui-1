@@ -11,6 +11,7 @@
 import { Project } from './project';
 import { Client } from './client';
 import { TaskStatus } from './task-status';
+import { User } from './user';
 
 export interface Task {
   id: string;
@@ -40,5 +41,6 @@ export interface Task {
   client?: Client;
   status?: TaskStatus;
   project?: Project;
+  user?: User;
   documents: any[];
 }
