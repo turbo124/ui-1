@@ -142,6 +142,13 @@ export default function Apply() {
         <DebouncedCombobox
           endpoint={`/api/v1/invoices?status_id=1,2,3&is_deleted=false&client_id=${payment?.client_id}`}
           label="number"
+          formatLabel={(resource: Invoice) =>
+            `${resource.number} (${formatMoney(
+              resource.balance,
+              payment?.client?.country_id ?? '1',
+              payment?.client?.settings.currency_id
+            )})`
+          }
           onChange={(value: Record<Invoice>) =>
             handleInvoiceChange(
               value.resource?.id as string,
