@@ -8,13 +8,7 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
-import { endpoint } from "$app/common/helpers";
-import { request } from '$app/common/helpers/request';
-import { GenericManyResponse } from '$app/common/interfaces/generic-many-response';
 import { EmailHistory } from "$app/common/interfaces/email-history";
-import invoice from "$tests/helpers/data/invoice";
-import { AxiosResponse } from 'axios';
-import { useQuery } from 'react-query';
 
 interface Props {
     history?: EmailHistory[];
