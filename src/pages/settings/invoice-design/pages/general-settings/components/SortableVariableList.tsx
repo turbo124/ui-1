@@ -123,7 +123,7 @@ export function SortableVariableList(props: Props) {
           <Droppable droppableId={props.for}>
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-                {company?.settings?.pdf_variables?.[props.for]?.map(
+                {company?.settings?.pdf_variables?.[props.for] && company?.settings?.pdf_variables?.[props.for]?.map(
                   (label: string, index: number) => (
                     <Draggable key={label} draggableId={label} index={index}>
                       {(provided) => (
