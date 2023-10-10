@@ -516,7 +516,7 @@ export default function Create() {
           <Element leftSide={t('payment_type')}>
             <SelectField
               id="type_id"
-              defaultValue={company?.settings?.payment_type_id}
+              value={company?.settings?.payment_type_id}
               onValueChange={(value) => handleChange('type_id', value)}
               errorMessage={errors?.errors.type_id}
               withBlank

@@ -41,8 +41,7 @@ export function useEnterPayment() {
                 {
                   _id: v4(),
                   invoice_id: invoice.id,
-                  amount:
-                    invoice.balance > 0 ? invoice.balance : invoice.amount,
+                  amount: invoice.balance > 0 ? invoice.balance : invoice.amount,
                 },
               ],
             }

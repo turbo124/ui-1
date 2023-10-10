@@ -74,6 +74,7 @@ jobs:
         while ! mysqladmin ping -h"127.0.0.1" -P"$DB_PORT" --silent; do
           sleep 1
         done
+
     - name: Setup PHP shivammathur/setup-php@v2
       uses: shivammathur/setup-php@v2
       with:
@@ -89,8 +90,6 @@ jobs:
         cp .env.ci .env
 
     - name: Prepare Laravel Application
-      env:
-        REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
       run: |
         cd invoiceninja
         php artisan key:generate
