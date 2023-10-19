@@ -9,6 +9,7 @@
  */
 
 import { ClientContact } from './client-contact';
+import { GroupSettings } from './group-settings';
 import { TaxInfo } from './tax-info';
 import { Timestamps } from './timestamps';
 
@@ -82,4 +83,5 @@ export interface Client extends Timestamps {
   routing_id: string;
   tax_info?: TaxInfo;
   classification: string;
+  group_settings?: GroupSettings
 }

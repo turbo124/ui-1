@@ -113,20 +113,27 @@ export default function Create() {
       ) {
         const _invoice = cloneDeep(data);
 
-        if (company && company.enabled_tax_rates > 0) {
-          _invoice.tax_name1 = company.settings.tax_name1;
-          _invoice.tax_rate1 = company.settings.tax_rate1;
-        }
+        // if (company && company.enabled_tax_rates > 0) {
+        //   _invoice.tax_name1 = company.settings.tax_name1;
+        //   _invoice.tax_rate1 = company.settings.tax_rate1;
+        // }
 
-        if (company && company.enabled_tax_rates > 1) {
-          _invoice.tax_name2 = company.settings.tax_name2;
-          _invoice.tax_rate2 = company.settings.tax_rate2;
-        }
+        // if (company && company.enabled_tax_rates > 1) {
+        //   _invoice.tax_name2 = company.settings.tax_name2;
+        //   _invoice.tax_rate2 = company.settings.tax_rate2;
+        // }
 
-        if (company && company.enabled_tax_rates > 2) {
-          _invoice.tax_name3 = company.settings.tax_name3;
-          _invoice.tax_rate3 = company.settings.tax_rate3;
-        }
+        // if (company && company.enabled_tax_rates > 2) {
+        //   _invoice.tax_name3 = company.settings.tax_name3;
+        //   _invoice.tax_rate3 = company.settings.tax_rate3;
+        // }
+
+        _invoice.tax_name1 = (client?.settings?.tax_name1 ? client?.settings?.tax_name1 : (client?.group_settings?.settings?.tax_name1 ? client?.group_settings?.settings?.tax_name1 : company?.settings?.tax_name1));
+        _invoice.tax_rate1 = Number((client?.settings?.tax_rate1 ? client?.settings?.tax_rate1 : (client?.group_settings?.settings?.tax_rate1 ? client?.group_settings?.settings?.tax_rate1 : company?.settings?.tax_rate1)));
+        _invoice.tax_name2 = (client?.settings?.tax_name2 ? client?.settings?.tax_name2 : (client?.group_settings?.settings?.tax_name2 ? client?.group_settings?.settings?.tax_name2 : company?.settings?.tax_name2));
+        _invoice.tax_rate2 = Number((client?.settings?.tax_rate2 ? client?.settings?.tax_rate2 : (client?.group_settings?.settings?.tax_rate2 ? client?.group_settings?.settings?.tax_rate2 : company?.settings?.tax_rate2)));
+        _invoice.tax_name3 = (client?.settings?.tax_name3 ? client?.settings?.tax_name3 : (client?.group_settings?.settings?.tax_name3 ? client?.group_settings?.settings?.tax_name3 : company?.settings?.tax_name3));
+        _invoice.tax_rate3 = Number((client?.settings?.tax_rate3 ? client?.settings?.tax_rate3 : (client?.group_settings?.settings?.tax_rate3 ? client?.group_settings?.settings?.tax_rate3 : company?.settings?.tax_rate3)));
 
         if (typeof _invoice.line_items === 'string') {
           _invoice.line_items = [];
