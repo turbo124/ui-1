@@ -64,8 +64,9 @@ test('can create a project', async ({ page }) => {
 
   await login(page);
   await clear();
-  await set('create_project');
+  await set('create_project', 'view_client');
   await save();
+
   await logout(page);
 
   await login(page, 'permissions@example.com', 'password');
@@ -85,7 +86,7 @@ test('can view assigned project with create_project', async ({ page }) => {
 
   await login(page);
   await clear();
-  await set('create_project');
+  await set('create_project', 'view_client');
   await save();
   await logout(page);
 
@@ -98,12 +99,10 @@ test('can view assigned project with create_project', async ({ page }) => {
     .click();
 
   await page.locator('[data-cy="name"]').fill('Project Name');
-
-  await page.locator('#headlessui-combobox-input-\\:rg\\:').click();
-  await page.getByRole('option', { name: 'cypress' }).click();
-
+  await page.locator('data-testid=combobox-input-field').first().click();
+  await page.getByRole('option').first().click();
   await page.getByRole('button', { name: 'Save' }).click();
-
+  
   await expect(
     page.getByRole('heading', { name: 'Edit Project' }).first()
   ).toBeVisible();

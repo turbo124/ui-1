@@ -270,7 +270,7 @@ test('cloning invoice', async ({ page }) => {
 
   await expect(page.getByText('Successfully created invoice')).toBeVisible();
 
-  await page.waitForURL('**/invoices/**/edit');
+  await page.waitForURL('**/invoices/**/edit**');
 
   await expect(
     page.getByRole('heading', { name: 'Edit Invoice' }).first()

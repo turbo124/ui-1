@@ -91,7 +91,7 @@ test('can view client', async ({ page }) => {
 
     await expect(page.getByText('No records found')).toBeVisible();
   }
-  await logout(page);
+  
 
 });
 
