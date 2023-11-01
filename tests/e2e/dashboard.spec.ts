@@ -17,5 +17,13 @@ test("see dashboard after login", async ({ page }) => {
 });
 
 test("can see search", async ({ page }) => {
-
+    await login(page, 'permissions@example.com', 'password');
+    await page.getByPlaceholder('Search... (Ctrl K)').click();
+    await page.getByText('User Details').click();
+    
+    await expect(
+        page.getByRole('heading', {
+            name: "User Details",
+        })
+    ).toBeVisible();
 });
