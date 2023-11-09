@@ -51,7 +51,7 @@ test('test appropriate invalidation of clients', async ({ page }) => {
   await expect(page.locator('div').filter({ hasText: /^Outstanding\$ 100\.00$/ }).getByRole('definition')).toBeVisible(); //improper invalidation causing this to fail
   await expect(page.locator('div').filter({ hasText: /^Credit Balance\$ 0\.00$/ }).getByRole('definition')).toBeVisible();
 
-  await page.getByRole('cell', { name: 'More Actions' }).getByRole('button').click();
+  await page.getByRole('cell', { name: 'More Actions' }).getByRole('button').first().click();
   await page.getByRole('button', { name: 'Mark Paid' }).click();
 
   await expect(page.locator('div').filter({ hasText: /^Paid to Date\$ 100\.00$/ }).getByRole('definition')).toBeVisible();

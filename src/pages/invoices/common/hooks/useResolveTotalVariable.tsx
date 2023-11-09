@@ -62,8 +62,12 @@ export function useResolveTotalVariable(props: Props) {
         </Element>
       );
     }
-
+    
     if (variable == '$discount' && invoiceSum) {
+      
+      if (!invoiceSum.totalDiscount || invoiceSum.totalDiscount == 0)
+        return;
+      
       return (
         <Element leftSide={resolveTranslation(variable, '$')}>
           {formatMoney(invoiceSum.totalDiscount)}
@@ -182,7 +186,7 @@ export function useResolveTotalVariable(props: Props) {
       // @ts-ignore
       value = resource[identifier] ?? 0;
     }
-
+    
     return (
       <Element leftSide={resolveTranslation(identifier, '$')}>
         {formatMoney(value)}
