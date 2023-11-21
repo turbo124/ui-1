@@ -117,7 +117,6 @@ export function QuoteFooter(props: Props) {
                   errorMessage={errors?.errors.assigned_user_id}
                 />
               </div>
-
               <div className="space-y-2">
                 <VendorSelector
                   inputLabel={t('vendor')}
@@ -127,7 +126,6 @@ export function QuoteFooter(props: Props) {
                   errorMessage={errors?.errors.vendor_id}
                 />
               </div>
-
               <div className="space-y-2">
                 <DesignSelector
                   inputLabel={t('design')}
