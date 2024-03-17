@@ -14,6 +14,7 @@ export const itemMap: Record[] = [
   { trans: 'quantity', value: 'item.quantity', map: '' },
   { trans: 'discount', value: 'item.discount', map: '' },
   { trans: 'cost', value: 'item.cost', map: '' },
+  { trans: 'product_cost', value: 'item.product_cost', map: '' },
   { trans: 'product_key', value: 'item.product_key', map: '' },
   { trans: 'notes', value: 'item.notes', map: '' },
   { trans: 'custom_value1', value: 'item.custom_value1', map: '' },
