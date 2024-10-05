@@ -29,6 +29,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHandleMethodToggle } from '../hooks/useHandleMethodToggle';
 import { useResolveGatewayTypeTranslation } from '../hooks/useResolveGatewayTypeTranslation';
+import { $help, HelpWidget } from '$app/components/HelpWidget';
+import { HelpCircle } from 'react-feather';
+import { accentColor } from 'tailwindcss/defaultTheme';
+import { useAccentColor } from '$app/common/hooks/useAccentColor';
 
 interface Props {
   gateway: Gateway;
@@ -90,6 +94,8 @@ export function Settings(props: Props) {
     return entry.is_enabled;
   };
 
+  const accentColor = useAccentColor();
+
   return (
     <Card title={t('settings')}>
       <Element leftSide={t('label')}>
@@ -112,6 +118,22 @@ export function Settings(props: Props) {
             <option value="optin">{t('auto_bill_help_optin')}</option>
             <option value="off">{t('off')}</option>
           </SelectField>
+
+
+              <button
+                type="button"
+                style={{ color: accentColor }}
+                onClick={() => $help('settings')}
+                className="inline-flex items-center space-x-1 mt-4"
+              >
+                <HelpCircle size={18} />
+                <span>{t('app_help_link')}</span>
+              </button>
+            
+          <HelpWidget
+            id="settings"
+            url="https://raw.githubusercontent.com/invoiceninja/invoiceninja.github.io/refs/heads/v5-rework/source/en/gateways.md"
+          />
         </Element>
       )}
 
