@@ -5,9 +5,10 @@ interface ClientCreateParams {
   page: Page;
   withNavigation?: boolean;
   createIfNotExist?: boolean;
+  clientName?: string;
 }
 export const createClient = async (params: ClientCreateParams) => {
-  const { page, withNavigation = true, createIfNotExist = false } = params;
+  const { page, withNavigation = true, createIfNotExist = false, clientName = 'Company Name' } = params;
 
   if (withNavigation) {
     await page
@@ -33,7 +34,7 @@ export const createClient = async (params: ClientCreateParams) => {
     .locator('div')
     .filter({ hasText: /^Name$/ })
     .getByRole('textbox')
-    .fill('Company Name');
+    .fill(clientName ?? 'Company Name');
     
   await page.locator('#first_name_0').fill('First Name');
   await page.locator('#last_name_0').fill('Last Name');

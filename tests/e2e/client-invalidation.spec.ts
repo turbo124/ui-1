@@ -1,5 +1,6 @@
 import { login, permissions } from '$tests/e2e/helpers';
 import { test, expect } from '@playwright/test';
+import { createClient } from './client-helpers';
 
 test('test appropriate invalidation of clients', async ({ page }) => {
   const { clear, save } = permissions(page);
@@ -10,16 +11,25 @@ test('test appropriate invalidation of clients', async ({ page }) => {
 
   // const client_name = faker.person.fullName();
   // console.log(client_name);
-
-  await page.getByRole('link', { name: 'Clients' }).click();
-  await page
-    .getByRole('link', { name: 'New Client', exact: true })
-    .first()
-    .click();
-
-  await page.locator('div').filter({ hasText: /^Name$/ }).getByRole('textbox').click()
   
-  await page.locator('div').filter({ hasText: /^Name$/ }).getByRole('textbox').fill('hello dear')
+  const client_name = `Client Name ${Date.now()}`;
+  
+  await createClient({ page, withNavigation: true, clientName: client_name });
+
+  // await page.getByPlaceholder('Filter').fill(client_name);
+  // await page.waitForTimeout(200);
+
+  // await page.getByRole('link', { name: client_name }).click();
+  await page.getByRole('button', { name: 'Edit' }).click();
+
+  // await page
+  //   .getByRole('link', { name: client_name, exact: true })
+  //   .first()
+  //   .click();
+
+  // await page.locator('div').filter({ hasText: /^Name$/ }).getByRole('textbox').click()
+  
+  // await page.locator('div').filter({ hasText: /^Name$/ }).getByRole('textbox').fill('hello dear')
 
   await page.getByRole('button', { name: 'Save' }).click();
   await page
@@ -27,9 +37,10 @@ test('test appropriate invalidation of clients', async ({ page }) => {
     .first()
     .click();
   await page.getByRole('combobox', { name: 'Client' }).click();
-  await page.getByRole('combobox', { name: 'Client' }).fill('hello dear');
+  await page.getByRole('combobox', { name: 'Client' }).fill(client_name);
+
   await expect(page.getByRole('combobox', { name: 'Client' })).toHaveValue(
-    'hello dear'
+    client_name
   );
   await page.getByRole('button', { name: 'Add Item' }).click();
   await page.locator('#notes').click();
@@ -123,6 +134,7 @@ test('test appropriate invalidation of clients', async ({ page }) => {
       .locator('div')
       .filter({ hasText: /^Credit Balance\$ 0\.00$/ })
       .getByRole('definition')
+    
   ).toBeVisible();
 
   // await page.getByRole('cell', { name: 'Actions' }).getByRole('button').first().click();

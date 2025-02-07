@@ -221,6 +221,9 @@ test('can view client', async ({ page }) => {
     .getByRole('link', { name: 'Clients', exact: true })
     .click();
 
+  await page.getByPlaceholder('Filter').fill('test view client');
+  await page.waitForTimeout(200);
+
   await page
     .getByRole('link', { name: 'test view client', exact: true })
     .first()
@@ -253,6 +256,9 @@ test('can edit client', async ({ page }) => {
     .locator('[data-cy="navigationBar"]')
     .getByRole('link', { name: 'Clients', exact: true })
     .click();
+
+  await page.getByPlaceholder('Filter').fill('test edit client');
+  await page.waitForTimeout(200);
 
   await page
     .getByRole('link', { name: 'test edit client', exact: true })
@@ -312,33 +318,39 @@ test('can create a client', async ({ page }) => {
 
   await page.waitForURL('**/clients');
 
+  await page.getByPlaceholder('Filter').fill('test create client');
+  await page.waitForTimeout(800);
+
   await page
     .getByRole('link', { name: 'test create client', exact: true })
     .first()
     .click();
 
-  await checkShowPage(page, true);
+  await page.waitForTimeout(500);
 
+  await checkShowPage(page, true);
+  
   await page
     .locator('[data-cy="topNavbar"]')
     .getByRole('button', { name: 'Edit', exact: true })
     .click();
 
   await checkEditPage(page);
-
+  await page.waitForTimeout(100);
   await page
     .locator('[data-cy="topNavbar"]')
     .getByRole('button', { name: 'Save', exact: true })
     .click();
+  await page.waitForTimeout(100);
 
   await expect(
     page.getByText('Successfully updated client', { exact: true })
   ).toBeVisible();
 
   await page.locator('[data-cy="chevronDownButton"]').first().click();
-
+  await page.waitForTimeout(100);
   await checkDropdownActions(page, actions, 'clientActionDropdown', '', true);
-
+  await page.waitForTimeout(100);
   await logout(page);
 });
 
@@ -370,6 +382,9 @@ test('can view and edit assigned client with create_client', async ({
     .locator('[data-cy="navigationBar"]')
     .getByRole('link', { name: 'Clients', exact: true })
     .click();
+
+  await page.getByPlaceholder('Filter').fill('test assigned client');
+  await page.waitForTimeout(800);
 
   await page
     .getByRole('link', { name: 'test assigned client', exact: true })
@@ -879,7 +894,7 @@ test('Testing military_time property on all settings levels', async ({
     .click();
 
   await page.getByPlaceholder('Filter').fill(clientName);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(800);
 
   await page
     .getByRole('link', { name: clientName, exact: true })
@@ -931,6 +946,9 @@ test('Testing military_time property on all settings levels', async ({
     .first()
     .click();
 
+  await page.getByPlaceholder('Filter').fill(clientName);
+  await page.waitForTimeout(800);
+  
   await page
     .getByRole('link', { name: clientName, exact: true })
     .first()
