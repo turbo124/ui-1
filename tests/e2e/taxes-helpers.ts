@@ -24,15 +24,22 @@ export const createTaxRate = async (params: TaxCreateParams) => {
   await page.waitForTimeout(300);
 
   await page.getByRole('main').locator('[type="text"]').first().fill(taxName);
-  await page
-    .getByRole('main')
-    .locator('[type="number"]')
-    .first()
-    .fill(rate.toString());
+
+  await page.locator('section').filter({ hasText: 'Tax Rate*' }).getByRole('textbox').fill(rate.toString());
+
+  // await page
+  //   .getByRole('main')
+  //   .locator('[type="number"]')
+  //   .first()
+  //   .fill(rate.toString());
 
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
   await expect(
     page.getByText('Successfully created tax rate', { exact: true })
   ).toBeVisible();
+
+  // await page.getByRole('button', { name: 'More Actions' }).click();
+
+  // await page.getByRole('button', { name: 'Delete', exact: true }).click();
 };

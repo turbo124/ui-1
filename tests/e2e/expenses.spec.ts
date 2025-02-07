@@ -875,7 +875,13 @@ test('Checking the gross amount by rate', async ({ page }) => {
   await page.getByText('tax_rate_20').click();
   await page.getByTestId('combobox-input-field').nth(6).blur();
 
-  await page.locator('[type="number"]').first().fill('12222');
+  // await page.locator('[type="number"]').first().fill('12222');
+
+  await page
+    .locator('div')
+    .filter({ hasText: /^Amount$/ })
+    .getByRole('textbox')
+    .fill('12222');
 
   await page
     .locator('[data-cy="topNavbar"]')
@@ -892,6 +898,12 @@ test('Checking the gross amount by rate', async ({ page }) => {
     .click();
 
   await expect(page.getByText('$ 15,888.60')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Tax Settings' }).click();
+  await page.getByRole('checkbox').first().check();
+  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByRole('button', { name: 'Delete' }).click();
 
   await logout(page);
 });
@@ -964,9 +976,9 @@ test('Checking the gross amount by amount', async ({ page }) => {
   await page.locator('#by_amount').click();
 
   await page.locator('[data-cy="taxNameByAmount1"]').fill('tax_name_1');
-  await page.locator('[data-cy="taxRateByAmount1"]').fill('100');
+  await page.locator('section:nth-child(2) > .relative > .w-full').first().fill('100');
   await page.locator('[data-cy="taxNameByAmount2"]').fill('tax_name_2');
-  await page.locator('[data-cy="taxRateByAmount2"]').fill('200');
+  await page.locator('section:nth-child(2) > .relative > .w-full').nth(1).fill('200');
 
   await page
     .locator('[data-cy="topNavbar"]')
