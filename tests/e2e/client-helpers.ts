@@ -29,7 +29,12 @@ export const createClient = async (params: ClientCreateParams) => {
     .getByRole('link', { name: 'New Client' })
     .click();
 
-  await page.locator('#name').fill('Company Name');
+  await page
+    .locator('div')
+    .filter({ hasText: /^Name$/ })
+    .getByRole('textbox')
+    .fill('Company Name');
+    
   await page.locator('#first_name_0').fill('First Name');
   await page.locator('#last_name_0').fill('Last Name');
   await page.locator('#email_0').fill('first@example.com');

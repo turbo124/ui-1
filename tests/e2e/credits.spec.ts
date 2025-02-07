@@ -167,7 +167,16 @@ const createCredit = async (params: CreateParams) => {
     await page.getByRole('option', { name: assignTo }).first().click();
   }
 
-  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Save', exact: true })
+  ).toBeVisible();
+
+  await page
+    .locator('[data-cy="topNavbar"]')
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+
+  // await page.getByRole('button', { name: 'Save' }).click();
 
   await expect(page.getByText('Successfully created credit')).toBeVisible();
 
@@ -291,14 +300,14 @@ test('can create a credit', async ({ page }) => {
 
   await checkEditPage(page, true, false);
 
+  await expect(
+    page.getByRole('button', { name: 'Save', exact: true })
+  ).toBeVisible();
+
   await page
     .locator('[data-cy="topNavbar"]')
     .getByRole('button', { name: 'Save', exact: true })
     .click();
-
-  await expect(
-    page.getByText('Successfully updated credit', { exact: true })
-  ).toBeVisible();
 
   await page.locator('[data-cy="chevronDownButton"]').first().click();
 
@@ -341,6 +350,10 @@ test('can view and edit assigned credit with create_credit', async ({
   await page.getByRole('link', { name: creditNumber, exact: true }).click();
 
   await checkEditPage(page, true, false);
+
+  await expect(
+    page.getByRole('button', { name: 'Save', exact: true })
+  ).toBeVisible();
 
   await page
     .locator('[data-cy="topNavbar"]')

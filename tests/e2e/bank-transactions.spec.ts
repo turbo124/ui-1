@@ -302,9 +302,16 @@ test('archiving transaction withe edit_bank_transaction', async ({ page }) => {
 test('Create expense bulk action', async ({ page }) => {
   await login(page);
 
-  await createVendor({ page, name: 'testing create expense' });
+  const uniqueVendorName = `Test Vendor ${Date.now()}`;
 
-  await createExpenseCategory({ page, categoryName: 'testing create expense' });
+  await createVendor({ page, name: uniqueVendorName });
+
+  const testCategoryName = `Test Category ${Date.now()}`;
+
+  await createExpenseCategory({
+    page,
+    categoryName: testCategoryName,
+  });
 
   await createBankTransaction({ page, type: 'withdrawal' });
 
@@ -349,22 +356,22 @@ test('Create expense bulk action', async ({ page }) => {
   await page
     .getByTestId('combobox-input-field')
     .first()
-    .fill('testing create expense');
+    .fill(uniqueVendorName);
 
   await page.waitForTimeout(200);
 
-  await page.getByText('testing create expense').first().click();
+  await page.getByText(uniqueVendorName).first().click();
 
   await page.getByTestId('combobox-input-field').last().click();
 
   await page
     .getByTestId('combobox-input-field')
     .last()
-    .fill('testing create expense');
+    .fill(testCategoryName);
 
   await page.waitForTimeout(200);
 
-  await page.getByText('testing create expense').first().click();
+  await page.getByText(testCategoryName).first().click();
 
   await expect(
     page.getByRole('button', { name: 'Create Expense', exact: true })
