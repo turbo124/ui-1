@@ -328,6 +328,11 @@ test('Create expense bulk action', async ({ page }) => {
     await page.locator('[data-cy="dataTableCheckbox"]').all()
   ).length;
 
+
+  // await page.locator('div:nth-child(3) > .css-1hyk38w-control > .css-1wy0on6 > .css-1xc3v61-indicatorContainer > .css-8mmkcg').click();
+  await page.getByText('Withdrawals', { exact: true }).click();
+  await page.waitForTimeout(200);
+
   await page
     .locator('[data-cy="dataTableCheckbox"]')
     .nth(numberOfCheckBoxes - 2)
