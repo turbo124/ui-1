@@ -70,6 +70,7 @@ export type Identifier =
   | 'aged_receivable_summary_report'
   | 'user_sales_report'
   | 'tax_summary_report'
+  | 'tax_period_report'
   | 'project';
 
 export function useReports() {
@@ -578,6 +579,27 @@ export function useReports() {
         include_tax: false,
       },
       preview: '/api/v1/reports/tax_summary_report?output=json',
+      supports_previews: false,
+    },
+    {
+      identifier: 'tax_period_report',
+      label: 'tax_period_report',
+      schedule_identifier: 'tax_period',
+      endpoint: '/api/v1/reports/tax_period_report',
+      allow_custom_column: false,
+      custom_columns: [],
+      payload: {
+        start_date: '',
+        end_date: '',
+        date_key: '',
+        date_range: 'last_month',
+        report_keys: [],
+        send_email: false,
+        is_expense_billed: false,
+        is_income_billed: false,
+        include_tax: false,
+      },
+      preview: '/api/v1/reports/tax_period_report?output=json',
       supports_previews: false,
     },
     {

@@ -112,22 +112,42 @@ export const ranges: Range[] = [
 
 const download = (data: BlobPart, identifier: string) => {
   let isPDF = false;
+  let isXLSX = false;
 
   // Check if data is ArrayBuffer or Uint8Array
   if (data instanceof ArrayBuffer || data instanceof Uint8Array) {
     const view = new Uint8Array(data instanceof ArrayBuffer ? data : data);
+    
+    // Check for PDF signature
     isPDF =
       view.length > 4 &&
       view[0] === 0x25 && // %
       view[1] === 0x50 && // P
       view[2] === 0x44 && // D
       view[3] === 0x46; // F
+    
+    // Check for XLSX signature (ZIP file signature)
+    isXLSX =
+      view.length > 4 &&
+      view[0] === 0x50 && // P
+      view[1] === 0x4B && // K
+      view[2] === 0x03 && // 03
+      view[3] === 0x04; // 04
   } else if (typeof data === 'string') {
     isPDF = data.startsWith('%PDF');
-  }
+    // XLSX files are binary, so they won't be strings
+  } 
 
-  const fileType = isPDF ? 'pdf' : 'csv';
-  const mimeType = isPDF ? 'application/pdf' : 'text/csv';
+  let fileType = 'csv';
+  let mimeType = 'text/csv';
+
+  if (isPDF) {
+    fileType = 'pdf';
+    mimeType = 'application/pdf';
+  } else if (isXLSX) {
+    fileType = 'xlsx';
+    mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  }
 
   const blob = new Blob([data], { type: mimeType });
   const url = URL.createObjectURL(blob);
