@@ -29,4 +29,5 @@ export interface BankAccount {
   updated_at: number;
   integration_type: string;
   nordigen_institution_id: string;
+  nordigen_account_id: string;
 }

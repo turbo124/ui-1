@@ -33,11 +33,12 @@ export const useBankAccountColumns = () => {
   const formatMoney = useFormatMoney();
   const resolveCurrency = useResolveCurrency({ resolveBy: 'code' });
 
-  const handleConnectNordigen = (institutionId: string) => {
+  const handleConnectNordigen = (institutionId: string, bankAccountId: string) => {
     request('POST', endpoint('/api/v1/one_time_token'), {
       context: 'nordigen',
       platform: 'react',
       institution_id: institutionId,
+      bank_account_id: bankAccountId,
     }).then((tokenResponse) => {
       window.open(
         endpoint('/nordigen/connect/:hash', {
@@ -91,7 +92,8 @@ export const useBankAccountColumns = () => {
                       bankAccount.integration_type === IntegrationType.Nordigen
                     ) {
                       handleConnectNordigen(
-                        bankAccount.nordigen_institution_id
+                        bankAccount.nordigen_institution_id,
+                        bankAccount.nordigen_account_id
                       );
                     }
 
