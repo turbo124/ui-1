@@ -26,7 +26,6 @@ import {
 import {
     $getSelectionStyleValueForProperty,
     $patchStyleText,
-    $selectAll,
     $setBlocksType,
 } from "@lexical/selection";
 import {
