@@ -25,6 +25,7 @@ import { NumberInputField } from '$app/components/forms/NumberInputField';
 import { MarkdownEditor } from '$app/components/forms/MarkdownEditor';
 import { useStaticsQuery } from '$app/common/queries/statics';
 import { useColorScheme } from '$app/common/colors';
+import MarkdownEditor2 from '$app/components/forms/MarkdownEditor2';
 
 export default function Settings() {
   const [t] = useTranslation();
@@ -224,7 +225,7 @@ export default function Settings() {
         headerStyle={{ borderColor: colors.$20 }}
       >
         <Element leftSide={t('public_notes')}>
-          <MarkdownEditor
+          <MarkdownEditor2
             value={client?.public_notes}
             onChange={(value) => handleChange('public_notes', value)}
           />
