@@ -800,7 +800,6 @@ function SpeechToTextPlugin({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
     const isDark = theme === 'dark';
     const buttonStyles = {
         padding: '8px',
-        border: 'none',
         backgroundColor: isListening ? (isDark ? '#0066cc' : '#007bff') : 'transparent',
         color: isListening ? '#ffffff' : (isDark ? '#ffffff' : '#000000'),
         cursor: 'pointer',

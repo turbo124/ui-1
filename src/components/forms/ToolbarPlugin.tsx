@@ -3,20 +3,16 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
     $createParagraphNode,
     $getNodeByKey,
-    $getRoot,
     $getSelection,
     $isRangeSelection,
     $isRootOrShadowRoot,
-    $isTextNode,
     CAN_REDO_COMMAND,
     CAN_UNDO_COMMAND,
     COMMAND_PRIORITY_CRITICAL,
     FORMAT_ELEMENT_COMMAND,
     FORMAT_TEXT_COMMAND,
-    INDENT_CONTENT_COMMAND,
     LexicalEditor,
     NodeKey,
-    OUTDENT_CONTENT_COMMAND,
     REDO_COMMAND,
     SELECTION_CHANGE_COMMAND,
     UNDO_COMMAND,
@@ -29,7 +25,6 @@ import {
 } from "@lexical/rich-text";
 import {
     $getSelectionStyleValueForProperty,
-    $isParentElementRTL,
     $patchStyleText,
     $selectAll,
     $setBlocksType,
@@ -52,7 +47,6 @@ import {
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import {
     $findMatchingParent,
-    $getNearestBlockElementAncestorOrThrow,
     $getNearestNodeOfType,
     mergeRegister,
 } from "@lexical/utils";
