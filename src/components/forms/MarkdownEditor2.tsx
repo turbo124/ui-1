@@ -24,9 +24,7 @@ import {
     SELECTION_CHANGE_COMMAND,
     COMMAND_PRIORITY_CRITICAL,
     $isTextNode,
-    $getNodeByKey,
     $insertNodes,
-    $createTextNode as createTextNode
 } from "lexical";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
@@ -53,7 +51,7 @@ import {
 import { CodeHighlightNode, CodeNode, $createCodeNode, $isCodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode, $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { mergeRegister, $findMatchingParent, $getNearestNodeOfType } from "@lexical/utils";
+import { mergeRegister, $findMatchingParent } from "@lexical/utils";
 import { $setBlocksType, $getSelectionStyleValueForProperty } from "@lexical/selection";
 import { useColorScheme } from '$app/common/colors';
 import { useReactSettings } from '$app/common/hooks/useReactSettings';
@@ -660,7 +658,7 @@ function ToolbarPlugin({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
 
             {/* Speech to Text */}
             <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
-                <SpeechToTextPlugin />
+                <SpeechToTextPlugin theme={theme} />
             </div>
 
             <div style={{ width: '1px', height: '24px', backgroundColor: toolbarStyles.divider, margin: '0 8px' }} />
@@ -731,8 +729,8 @@ function ToolbarPlugin({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
     );
 }
 
-// Fix the SpeechToTextPlugin to use the correct ToolbarButton
-function SpeechToTextPlugin() {
+// Update the SpeechToTextPlugin to accept theme and use dynamic styling
+function SpeechToTextPlugin({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
     const [editor] = useLexicalComposerContext();
     const [isListening, setIsListening] = useState(false);
     const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
@@ -799,25 +797,38 @@ function SpeechToTextPlugin() {
         }
     };
 
-    // Move ToolbarButton definition here or use inline button
+    const isDark = theme === 'dark';
+    const buttonStyles = {
+        padding: '8px',
+        border: 'none',
+        backgroundColor: isListening ? (isDark ? '#0066cc' : '#007bff') : 'transparent',
+        color: isListening ? '#ffffff' : (isDark ? '#ffffff' : '#000000'),
+        cursor: 'pointer',
+        borderRadius: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '32px',
+        height: '32px',
+        transition: 'all 0.2s ease',
+        border: isListening ? 'none' : `1px solid ${isDark ? '#333333' : '#e1e5e9'}`
+    };
+
     return (
         <button
             type="button"
             onClick={isListening ? stopListening : startListening}
             title={isListening ? "Stop Speech to Text" : "Start Speech to Text"}
-            style={{
-                padding: '8px',
-                border: 'none',
-                backgroundColor: isListening ? '#0066cc' : 'transparent',
-                color: isListening ? '#ffffff' : '#000000',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '32px',
-                height: '32px',
-                transition: 'all 0.2s ease'
+            style={buttonStyles}
+            onMouseEnter={(e) => {
+                if (!isListening) {
+                    e.currentTarget.style.backgroundColor = isDark ? '#333333' : '#f5f5f5';
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (!isListening) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                }
             }}
         >
             <MicrophoneIcon />
