@@ -295,7 +295,7 @@ function Invitation({ invitation, document, isFirst }: InvitationProps) {
             </Button>
           )}
 
-          {!isFirst && (
+          {!isFirst && invitation && !invitation.signed_date && (
 
           <div className="relative flex flex-1 space-x-2 items-center justify-end">
             <Tooltip

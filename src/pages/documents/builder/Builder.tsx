@@ -466,6 +466,10 @@ function Builder() {
   const pages: Page[] = [
     { name: t('documents'), href: '/documents' },
     {
+      name: t('document'),
+      href: route('/documents/:id', { id }),
+    },
+    {
       name: t('edit'),
       href: route('/documents/:id/builder', { id }),
     },

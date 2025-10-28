@@ -21,6 +21,7 @@ import { request } from '$app/common/helpers/request';
 import { useNavigate } from 'react-router-dom';
 import { route } from '$app/common/helpers/route';
 import { Document } from '$app/common/interfaces/docuninja/api';
+import { $refetch } from '$app/common/hooks/useRefetch';
 
 interface UseActionsParams {
   onSettingsClick: (blueprint: Blueprint) => void;
@@ -90,9 +91,10 @@ export function useActions(params: UseActionsParams) {
             Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
           },
         }
-      ).then((response: AxiosResponse<GenericSingleResponse<Document>>) =>
-        navigate(route('/documents/:id/builder', { id: response.data.data.id }))
-      );
+      ).then((response: AxiosResponse<GenericSingleResponse<Document>>) =>{
+        $refetch(['docuninja_documents']);
+        navigate(route('/documents/:id/builder', { id: response.data.data.id }));
+    });
     }
   };
   
