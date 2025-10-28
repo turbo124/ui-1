@@ -285,7 +285,7 @@ export interface DocumentInvitation {
   created_at: string; // ISO 8601 date string
   updated_at: string; // ISO 8601 date string
   archived_at: string | null; // ISO 8601 date string
-
+  signing_order: number | null;
   // Relations
   user?: User;
   company?: Company;

@@ -88,7 +88,7 @@ export function Tooltip(props: Props) {
                 {
                   'leading-1': includeLeading,
                   'leading-none': !includeLeading,
-                  'whitespace-normal break-all':
+                  'whitespace-normal break-words':
                     Boolean(message) && !withoutWrapping,
                   'whitespace-nowrap': withoutWrapping,
                 }

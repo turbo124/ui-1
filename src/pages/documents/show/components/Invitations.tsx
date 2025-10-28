@@ -8,7 +8,7 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
-import { Calendar } from 'react-feather';
+import { Calendar, HelpCircle } from 'react-feather';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '$app/common/helpers/toast/toast';
@@ -30,6 +30,7 @@ import { MdSend } from 'react-icons/md';
 import { Icon } from '$app/components/icons/Icon';
 import { request } from '$app/common/helpers/request';
 import { $refetch } from '$app/common/hooks/useRefetch';
+import { Tooltip } from '$app/components/Tooltip';
 import classNames from 'classnames';
 
 type InvitationsProps = {
@@ -73,13 +74,21 @@ export function Invitations({ document }: InvitationsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {document.invitations?.map((invitation: DocumentInvitation) => (
-        <Invitation
-          key={invitation.id}
-          invitation={invitation}
-          document={document}
-        />
-      ))}
+      {document.invitations
+        ?.slice()
+        .sort((a, b) => {
+          const orderA = a.signing_order ?? Infinity;
+          const orderB = b.signing_order ?? Infinity;
+          return orderA - orderB;
+        })
+        .map((invitation: DocumentInvitation, index: number) => (
+          <Invitation
+            key={invitation.id}
+            invitation={invitation}
+            document={document}
+            isFirst={index === 0}
+          />
+        ))}
     </div>
   );
 }
@@ -87,9 +96,10 @@ export function Invitations({ document }: InvitationsProps) {
 type InvitationProps = {
   invitation: DocumentInvitation;
   document: DocumentType;
+  isFirst?: boolean;
 };
 
-function Invitation({ invitation, document }: InvitationProps) {
+function Invitation({ invitation, document, isFirst }: InvitationProps) {
   const [t] = useTranslation();
 
   const colors = useColorScheme();
@@ -129,7 +139,7 @@ function Invitation({ invitation, document }: InvitationProps) {
       label = t('sent');
     } else {
       dateString = invitation.created_at;
-      label = t('created');
+      label = t('created_on');
     }
 
     return (
@@ -254,7 +264,7 @@ function Invitation({ invitation, document }: InvitationProps) {
           document?.status_id !== DocumentStatus.Voided
       ) && (
         <div className="flex justify-between space-x-4 pb-4">
-          {getEntityLink() && (
+          {isFirst && getEntityLink() && (
             <Button
               className="py-1"
               type="minimal"
@@ -267,21 +277,41 @@ function Invitation({ invitation, document }: InvitationProps) {
             </Button>
           )}
 
-          <Button
-            type="minimal"
-            behavior="button"
-            onClick={handleSendInvitation}
-            disabled={isSendingInvitation}
-            disableWithoutIcon
-          >
-            <div className="flex items-center space-x-2">
-              <div>
-                <Icon element={MdSend} size={17} />
-              </div>
+          {isFirst && (
+            <Button
+              type="minimal"
+              behavior="button"
+              onClick={handleSendInvitation}
+              disabled={isSendingInvitation}
+              disableWithoutIcon
+            >
+              <div className="flex items-center space-x-2">
+                <div>
+                  <Icon element={MdSend} size={17} />
+                </div>
 
-              <span>{t('send_email')}</span>
-            </div>
-          </Button>
+                <span>{t('send_email')}</span>
+              </div>
+            </Button>
+          )}
+
+          {!isFirst && (
+
+          <div className="relative flex flex-1 space-x-2 items-center justify-end">
+            <Tooltip
+              message={t('invitation_signatory_help') as string}
+              width="auto"
+              placement="bottom"
+              withoutArrow
+              withoutWrapping={false}
+            >
+              <div className="flex items-center">
+                <Icon element={HelpCircle} size={20} color={colors.$3} />
+              </div>
+            </Tooltip>
+          </div>
+      
+          )}
         </div>
       )}
     </div>
