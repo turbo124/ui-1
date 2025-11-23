@@ -20,7 +20,7 @@ import {
 
 export class CleanTableCellNode extends TableCellNode {
   static getType(): string {
-    return 'clean-tablecell';
+    return 'tablecell';
   }
 
   static clone(node: CleanTableCellNode): CleanTableCellNode {
