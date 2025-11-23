@@ -55,53 +55,76 @@ import { useReactSettings } from '$app/common/hooks/useReactSettings';
  * Strips unwanted inline styles that Lexical injects during HTML export
  * These styles come from CSS theme classes and should not be part of the HTML output
  */
-function stripInjectedTableStyles(html: string): string {
+function stripLexicalInjections(html: string): string {
   // Create a DOM parser to manipulate the HTML
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   
-  // Find all table cells
-  const tableCells = doc.querySelectorAll('td, th');
-  
-  tableCells.forEach((cell) => {
-    const htmlCell = cell as HTMLElement;
-    const styleAttr = htmlCell.getAttribute('style');
+  // 1. Remove ALL theme classes from all elements
+  const allElements = doc.querySelectorAll('*');
+  allElements.forEach((element) => {
+    const htmlElement = element as HTMLElement;
     
-    if (!styleAttr) return;
-    
-    // Parse existing styles
-    const styles: Record<string, string> = {};
-    styleAttr.split(';').forEach(style => {
-      const [property, value] = style.split(':').map(s => s.trim());
-      if (property && value) {
-        styles[property] = value;
+    // Remove all PlaygroundEditorTheme classes
+    if (htmlElement.className) {
+      const classes = htmlElement.className.split(' ').filter(
+        cls => !cls.startsWith('PlaygroundEditorTheme__')
+      );
+      
+      if (classes.length > 0) {
+        htmlElement.className = classes.join(' ');
+      } else {
+        htmlElement.removeAttribute('class');
       }
-    });
-    
-    // Remove Lexical-injected default styles
-    delete styles['border'];          // Remove "border: 1px solid black"
-    delete styles['text-align'];      // Remove "text-align: start"
-    
-    // Remove default width: 75px but keep custom widths
-    if (styles['width'] === '75px') {
-      delete styles['width'];
     }
     
-    // Remove default vertical-align: top but keep custom values
-    if (styles['vertical-align'] === 'top') {
-      delete styles['vertical-align'];
+    // Remove Lexical-injected inline styles
+    const styleAttr = htmlElement.getAttribute('style');
+    if (styleAttr) {
+      const styles: Record<string, string> = {};
+      styleAttr.split(';').forEach(style => {
+        const [property, value] = style.split(':').map(s => s.trim());
+        if (property && value) {
+          styles[property] = value;
+        }
+      });
+      
+      // Remove Lexical-specific injected styles
+      delete styles['white-space'];  // Remove "white-space: pre-wrap"
+      
+      // For table cells, remove Lexical defaults
+      if (htmlElement.tagName === 'TD' || htmlElement.tagName === 'TH') {
+        delete styles['border'];           // Remove "border: 1px solid black"
+        delete styles['text-align'];       // Remove "text-align: start"
+        
+        // Remove default width: 75px but keep custom widths
+        if (styles['width'] === '75px') {
+          delete styles['width'];
+        }
+        
+        // Remove default vertical-align: top but keep custom values
+        if (styles['vertical-align'] === 'top') {
+          delete styles['vertical-align'];
+        }
+      }
+      
+      // Rebuild style attribute with only preserved styles
+      const preservedStyles = Object.entries(styles)
+        .map(([prop, val]) => `${prop}: ${val}`)
+        .join('; ');
+      
+      if (preservedStyles) {
+        htmlElement.setAttribute('style', preservedStyles);
+      } else {
+        htmlElement.removeAttribute('style');
+      }
     }
-    
-    // Rebuild style attribute with only preserved styles
-    const preservedStyles = Object.entries(styles)
-      .map(([prop, val]) => `${prop}: ${val}`)
-      .join('; ');
-    
-    if (preservedStyles) {
-      htmlCell.setAttribute('style', preservedStyles);
-    } else {
-      htmlCell.removeAttribute('style');
-    }
+  });
+  
+  // 2. Remove <colgroup> elements from tables
+  const colgroups = doc.querySelectorAll('colgroup');
+  colgroups.forEach(colgroup => {
+    colgroup.remove();
   });
   
   return doc.body.innerHTML;
@@ -202,7 +225,7 @@ export function Editor({ value, disabled, onChange }: Props): JSX.Element {
             editorState.read(() => {
               const htmlString = $generateHtmlFromNodes(editor, null);
               // Strip Lexical-injected table styles before saving
-              const cleanedHtml = stripInjectedTableStyles(htmlString);
+              const cleanedHtml = stripLexicalInjections(htmlString);
               onChange(cleanedHtml);
             });
           }}
