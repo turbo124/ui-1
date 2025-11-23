@@ -51,6 +51,62 @@ import { $insertNodes } from 'lexical';
 import classNames from 'classnames';
 import { useReactSettings } from '$app/common/hooks/useReactSettings';
 
+/**
+ * Strips unwanted inline styles that Lexical injects during HTML export
+ * These styles come from CSS theme classes and should not be part of the HTML output
+ */
+function stripInjectedTableStyles(html: string): string {
+  // Create a DOM parser to manipulate the HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  // Find all table cells
+  const tableCells = doc.querySelectorAll('td, th');
+  
+  tableCells.forEach((cell) => {
+    const htmlCell = cell as HTMLElement;
+    const styleAttr = htmlCell.getAttribute('style');
+    
+    if (!styleAttr) return;
+    
+    // Parse existing styles
+    const styles: Record<string, string> = {};
+    styleAttr.split(';').forEach(style => {
+      const [property, value] = style.split(':').map(s => s.trim());
+      if (property && value) {
+        styles[property] = value;
+      }
+    });
+    
+    // Remove Lexical-injected default styles
+    delete styles['border'];          // Remove "border: 1px solid black"
+    delete styles['text-align'];      // Remove "text-align: start"
+    
+    // Remove default width: 75px but keep custom widths
+    if (styles['width'] === '75px') {
+      delete styles['width'];
+    }
+    
+    // Remove default vertical-align: top but keep custom values
+    if (styles['vertical-align'] === 'top') {
+      delete styles['vertical-align'];
+    }
+    
+    // Rebuild style attribute with only preserved styles
+    const preservedStyles = Object.entries(styles)
+      .map(([prop, val]) => `${prop}: ${val}`)
+      .join('; ');
+    
+    if (preservedStyles) {
+      htmlCell.setAttribute('style', preservedStyles);
+    } else {
+      htmlCell.removeAttribute('style');
+    }
+  });
+  
+  return doc.body.innerHTML;
+}
+
 interface Props {
   value: string | undefined;
   disabled: boolean;
@@ -145,7 +201,9 @@ export function Editor({ value, disabled, onChange }: Props): JSX.Element {
 
             editorState.read(() => {
               const htmlString = $generateHtmlFromNodes(editor, null);
-              onChange(htmlString);
+              // Strip Lexical-injected table styles before saving
+              const cleanedHtml = stripInjectedTableStyles(htmlString);
+              onChange(cleanedHtml);
             });
           }}
         />
