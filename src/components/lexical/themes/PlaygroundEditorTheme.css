@@ -287,10 +287,6 @@
   outline: 2px solid rgb(60, 132, 244);
 }
 .PlaygroundEditorTheme__tableCell {
-  border: 1px solid #bbb;
-  width: 75px;
-  vertical-align: top;
-  text-align: start;
   padding: 6px 8px;
   position: relative;
   outline: none;
