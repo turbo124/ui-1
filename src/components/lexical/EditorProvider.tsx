@@ -13,7 +13,8 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import PlaygroundEditorTheme from './themes/PlaygroundEditorTheme';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import { $isTextNode, DOMConversionMap, TextNode } from 'lexical';
-import { TableNode, TableCellNode, TableRowNode } from '@lexical/table';
+import { TableNode, TableRowNode } from '@lexical/table';
+import { CleanTableCellNode } from './nodes/CleanTableCellNode';
 import { parseAllowedColor } from './ui/ColorPicker';
 import { parseAllowedFontSize } from './plugins/ToolbarPlugin/fontSize';
 import { SharedHistoryContext } from './context/SharedHistoryContext';
@@ -43,7 +44,7 @@ function buildImportMap(): DOMConversionMap {
   const importMap: DOMConversionMap = {};
 
   // Get default table cell importers and wrap them to preserve all styles
-  const tableCellImporters = TableCellNode.importDOM?.() || {};
+  const tableCellImporters = CleanTableCellNode.importDOM?.() || {};
   
   for (const [tag, importerFn] of Object.entries(tableCellImporters)) {
     importMap[tag] = (node: Node) => {
@@ -67,7 +68,7 @@ function buildImportMap(): DOMConversionMap {
           const lexicalNode = output.node;
 
           // Preserve all table cell styles to prevent UI disruption
-          if (lexicalNode instanceof TableCellNode) {
+          if (lexicalNode instanceof CleanTableCellNode) {
             const styleAttr = domNode.getAttribute('style') || '';
 
             // Preserve background-color
