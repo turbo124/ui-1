@@ -176,6 +176,26 @@ function buildExportMap(): Map<Klass<LexicalNode>, (editor: LexicalEditor, targe
   const stripThemeClasses = (element: HTMLElement | Text | DocumentFragment | null): typeof element => {
     if (!element || !(element instanceof HTMLElement)) return element;
     
+    // First, convert table alignment theme classes to inline styles BEFORE removing them
+    if (element.tagName === 'TABLE' && element.className) {
+      const existingStyle = element.getAttribute('style') || '';
+      let additionalStyles = '';
+      
+      if (element.className.includes('PlaygroundEditorTheme__tableAlignmentCenter')) {
+        additionalStyles += 'margin-left: auto; margin-right: auto;';
+      } else if (element.className.includes('PlaygroundEditorTheme__tableAlignmentRight')) {
+        additionalStyles += 'margin-left: auto;';
+      }
+      
+      if (additionalStyles) {
+        const combinedStyle = existingStyle 
+          ? `${existingStyle}; ${additionalStyles}` 
+          : additionalStyles;
+        element.setAttribute('style', combinedStyle.replace(/;\s*;/g, ';').trim());
+      }
+    }
+    
+    // Now remove all PlaygroundEditorTheme classes
     if (element.className) {
       const classes = element.className.split(' ').filter(
         cls => !cls.startsWith('PlaygroundEditorTheme__')
