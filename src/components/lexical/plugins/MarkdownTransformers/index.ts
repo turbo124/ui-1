@@ -24,7 +24,6 @@ import {
   HorizontalRuleNode,
 } from '@lexical/react/LexicalHorizontalRuleNode';
 import {
-  $createTableCellNode,
   $createTableNode,
   $createTableRowNode,
   $isTableCellNode,
@@ -35,6 +34,7 @@ import {
   TableNode,
   TableRowNode,
 } from '@lexical/table';
+import { $createCleanTableCellNode } from '../../nodes/CleanTableCellNode';
 import { $isParagraphNode, $isTextNode, LexicalNode } from 'lexical';
 
 import {
@@ -244,7 +244,7 @@ function getTableColumnsSize(table: TableNode) {
 
 const $createTableCell = (textContent: string): TableCellNode => {
   textContent = textContent.replace(/\\n/g, '\n');
-  const cell = $createTableCellNode(TableCellHeaderStates.NO_STATUS);
+  const cell = $createCleanTableCellNode(TableCellHeaderStates.NO_STATUS);
   $convertFromMarkdownString(textContent, PLAYGROUND_TRANSFORMERS, cell);
   return cell;
 };
