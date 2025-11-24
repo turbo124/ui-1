@@ -69,11 +69,12 @@
   border-radius: 12px;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-xs);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .tiptap-container:focus-within {
@@ -90,8 +91,10 @@
   background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   border-bottom: 1.5px solid var(--border-color);
   align-items: center;
-  overflow-x: auto;
+  overflow: visible;
   transition: background 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .tiptap-toolbar-group {
@@ -112,8 +115,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 34.2px;
+  height: 34.2px;
   padding: 0;
   border: 1.5px solid var(--border-light);
   background-color: var(--bg-primary);
@@ -131,8 +134,8 @@
 }
 
 .tiptap-toolbar-btn svg {
-  width: 19px;
-  height: 19px;
+  width: 17.1px;
+  height: 17.1px;
   stroke-width: 2;
   color: currentColor;
 }
@@ -642,6 +645,132 @@
   .ProseMirror h3 {
     font-size: 22px;
   }
+}
+
+/* ===== DROPDOWNS ===== */
+.tiptap-dropdown-group {
+  position: relative;
+  z-index: 100;
+}
+
+.tiptap-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.tiptap-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  border-left: 4px solid transparent;
+}
+
+.tiptap-dropdown-item:hover {
+  background-color: var(--bg-secondary);
+  padding-left: 12px;
+}
+
+.tiptap-dropdown-item:active {
+  background-color: var(--accent-light);
+}
+
+/* ===== TABLE GRID ===== */
+.tiptap-table-grid {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 28px);
+  gap: 2px;
+  padding: 8px;
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+}
+
+.tiptap-table-cell {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--border-light);
+  background-color: var(--bg-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.tiptap-table-cell:hover,
+.tiptap-table-cell.active {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  border-color: var(--accent-dark);
+  box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);
+}
+
+/* ===== EMOJI GRID ===== */
+.tiptap-emoji-grid {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 36px);
+  gap: 4px;
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+}
+
+.tiptap-emoji-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-light);
+  background-color: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 18px;
+  transition: all 0.15s ease;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiptap-emoji-btn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+.tiptap-emoji-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== DROPDOWN BUTTON INDICATOR ===== */
+.dropdown-btn::after {
+  content: '▼';
+  font-size: 8px;
+  margin-left: 4px;
+  opacity: 0.6;
 }
 
 /* ===== PRINT STYLES ===== */

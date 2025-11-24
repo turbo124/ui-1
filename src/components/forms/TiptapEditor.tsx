@@ -27,6 +27,61 @@ import { debounce } from 'lodash';
 import { useColorScheme } from '$app/common/colors';
 import './TiptapEditor.css';
 
+// Font families
+const FONTS = [
+  { name: 'System Default', value: 'inherit' },
+  { name: 'Arial', value: 'Arial, sans-serif' },
+  { name: 'Georgia', value: 'Georgia, serif' },
+  { name: 'Times New Roman', value: '"Times New Roman", serif' },
+  { name: 'Courier New', value: '"Courier New", monospace' },
+  { name: 'Verdana', value: 'Verdana, sans-serif' },
+  { name: 'Helvetica', value: 'Helvetica, sans-serif' },
+  { name: 'Trebuchet MS', value: '"Trebuchet MS", sans-serif' },
+];
+
+// Font sizes
+const FONT_SIZES = [
+  { name: '8px', value: '8px' },
+  { name: '10px', value: '10px' },
+  { name: '12px', value: '12px' },
+  { name: '14px', value: '14px' },
+  { name: '16px', value: '16px' },
+  { name: '18px', value: '18px' },
+  { name: '20px', value: '20px' },
+  { name: '24px', value: '24px' },
+  { name: '28px', value: '28px' },
+  { name: '32px', value: '32px' },
+];
+
+// Popular emojis
+const EMOJIS = [
+  '😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🔥', '✨', '🎉',
+  '🚀', '💪', '🙏', '🤝', '📝', '✅', '❌', '⚠️', '💡', '📌',
+  '📎', '📊', '📈', '💰', '🎯', '⭐', '🌟', '💼', '📱', '💻',
+];
+
+// Highlight colors
+const HIGHLIGHT_COLORS = [
+  { name: 'Yellow', value: '#FFFF00' },
+  { name: 'Green', value: '#00FF00' },
+  { name: 'Blue', value: '#0000FF' },
+  { name: 'Red', value: '#FF0000' },
+  { name: 'Pink', value: '#FF69B4' },
+  { name: 'Orange', value: '#FFA500' },
+];
+
+// Text colors
+const TEXT_COLORS = [
+  { name: 'Black', value: '#000000' },
+  { name: 'Dark Gray', value: '#333333' },
+  { name: 'Gray', value: '#666666' },
+  { name: 'Light Gray', value: '#999999' },
+  { name: 'Red', value: '#E53E3E' },
+  { name: 'Blue', value: '#3182CE' },
+  { name: 'Green', value: '#38A169' },
+  { name: 'Orange', value: '#ED8936' },
+];
+
 // SVG Icons Library
 const Icons = {
   Bold: () => (
@@ -65,10 +120,6 @@ const Icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
-      <path d="M11 8v.01" />
-      <path d="M8 11h.01" />
-      <path d="M14 11h.01" />
-      <path d="M11 14h.01" />
     </svg>
   ),
   Image: () => (
@@ -229,6 +280,26 @@ const Icons = {
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   ),
+  TextColor: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <text x="6" y="16" fontSize="10" fontWeight="bold">A</text>
+      <line x1="3" y1="20" x2="21" y2="20" strokeWidth="3" />
+    </svg>
+  ),
+  Highlight: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.5 4L5 8.5L19 22.5L23.5 18L9.5 4Z" strokeLinejoin="round" />
+      <path d="M7.5 8.5L5 11L4 15" />
+    </svg>
+  ),
+  Emoji: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  ),
 };
 
 interface Props {
@@ -243,6 +314,13 @@ export function TiptapEditor(props: Props) {
   const colors = useColorScheme();
   const [isCodeView, setIsCodeView] = useState(false);
   const [codeValue, setCodeValue] = useState(props.value || '');
+  const [tableDropdown, setTableDropdown] = useState(false);
+  const [emojiDropdown, setEmojiDropdown] = useState(false);
+  const [textColorDropdown, setTextColorDropdown] = useState(false);
+  const [highlightDropdown, setHighlightDropdown] = useState(false);
+  const [formatValue, setFormatValue] = useState('p');
+  const [fontValue, setFontValue] = useState('');
+  const [sizeValue, setSizeValue] = useState('');
   const isDarkMode = colors.$0 === 'dark';
 
   const editor = useEditor({
@@ -303,6 +381,37 @@ export function TiptapEditor(props: Props) {
     };
   }, [debouncedOnChange]);
 
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateFormatValue = () => {
+      // Check what format is active and update the select
+      if (editor.isActive('heading', { level: 1 })) {
+        setFormatValue('h1');
+      } else if (editor.isActive('heading', { level: 2 })) {
+        setFormatValue('h2');
+      } else if (editor.isActive('heading', { level: 3 })) {
+        setFormatValue('h3');
+      } else if (editor.isActive('heading', { level: 4 })) {
+        setFormatValue('h4');
+      } else if (editor.isActive('heading', { level: 5 })) {
+        setFormatValue('h5');
+      } else if (editor.isActive('heading', { level: 6 })) {
+        setFormatValue('h6');
+      } else {
+        setFormatValue('p');
+      }
+    };
+
+    editor.on('update', updateFormatValue);
+    editor.on('selectionUpdate', updateFormatValue);
+
+    return () => {
+      editor.off('update', updateFormatValue);
+      editor.off('selectionUpdate', updateFormatValue);
+    };
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -335,12 +444,56 @@ export function TiptapEditor(props: Props) {
     }
   };
 
+  const insertTable = (rows: number, cols: number) => {
+    editor
+      .chain()
+      .focus()
+      .insertTable({ rows, cols, withHeaderRow: true })
+      .run();
+    setTableDropdown(false);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    editor.chain().focus().insertContent(emoji).run();
+    setEmojiDropdown(false);
+  };
+
+  const handleFontChange = (font: string) => {
+    editor.commands.setMark('textStyle', { fontFamily: font });
+  };
+
+  const handleFontSizeChange = (size: string) => {
+    editor.commands.setMark('textStyle', { fontSize: size });
+  };
+
   return (
     <div className={`tiptap-wrapper ${isDarkMode ? 'dark' : 'light'}`}>
       <div className="tiptap-container">
         {!isCodeView ? (
           <>
-            <MenuBar editor={editor} isDarkMode={isDarkMode} onCodeClick={switchToCodeView} />
+            <MenuBar
+              editor={editor}
+              isDarkMode={isDarkMode}
+              onCodeClick={switchToCodeView}
+              tableDropdown={tableDropdown}
+              setTableDropdown={setTableDropdown}
+              insertTable={insertTable}
+              emojiDropdown={emojiDropdown}
+              setEmojiDropdown={setEmojiDropdown}
+              insertEmoji={insertEmoji}
+              textColorDropdown={textColorDropdown}
+              setTextColorDropdown={setTextColorDropdown}
+              highlightDropdown={highlightDropdown}
+              setHighlightDropdown={setHighlightDropdown}
+              handleFontChange={handleFontChange}
+              handleFontSizeChange={handleFontSizeChange}
+              formatValue={formatValue}
+              setFormatValue={setFormatValue}
+              fontValue={fontValue}
+              setFontValue={setFontValue}
+              sizeValue={sizeValue}
+              setSizeValue={setSizeValue}
+            />
             <EditorContent
               editor={editor}
               className="tiptap-editor-content"
@@ -398,21 +551,49 @@ interface MenuBarProps {
   editor: any;
   isDarkMode: boolean;
   onCodeClick: () => void;
+  tableDropdown: boolean;
+  setTableDropdown: (value: boolean) => void;
+  insertTable: (rows: number, cols: number) => void;
+  emojiDropdown: boolean;
+  setEmojiDropdown: (value: boolean) => void;
+  insertEmoji: (emoji: string) => void;
+  textColorDropdown: boolean;
+  setTextColorDropdown: (value: boolean) => void;
+  highlightDropdown: boolean;
+  setHighlightDropdown: (value: boolean) => void;
+  handleFontChange: (font: string) => void;
+  handleFontSizeChange: (size: string) => void;
+  formatValue: string;
+  setFormatValue: (value: string) => void;
+  fontValue: string;
+  setFontValue: (value: string) => void;
+  sizeValue: string;
+  setSizeValue: (value: string) => void;
 }
 
-function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
-  const insertTable = () => {
-    const rows = prompt('Number of rows:', '3');
-    const cols = prompt('Number of columns:', '3');
-    if (rows && cols) {
-      editor
-        .chain()
-        .focus()
-        .insertTable({ rows: parseInt(rows), cols: parseInt(cols), withHeaderRow: true })
-        .run();
-    }
-  };
-
+function MenuBar({
+  editor,
+  isDarkMode,
+  onCodeClick,
+  tableDropdown,
+  setTableDropdown,
+  insertTable,
+  emojiDropdown,
+  setEmojiDropdown,
+  insertEmoji,
+  textColorDropdown,
+  setTextColorDropdown,
+  highlightDropdown,
+  setHighlightDropdown,
+  handleFontChange,
+  handleFontSizeChange,
+  formatValue,
+  setFormatValue,
+  fontValue,
+  setFontValue,
+  sizeValue,
+  setSizeValue,
+}: MenuBarProps) {
   const insertImage = () => {
     const url = prompt('Enter image URL:');
     if (url) {
@@ -441,14 +622,16 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
       {/* Format Group */}
       <div className="tiptap-toolbar-group">
         <select
+          value={formatValue}
           onChange={(e) => {
-            if (e.target.value === 'p') {
+            const value = e.target.value;
+            setFormatValue(value);
+            if (value === 'p') {
               editor.chain().focus().setParagraph().run();
-            } else if (e.target.value.startsWith('h')) {
-              const level = parseInt(e.target.value[1]);
+            } else if (value.startsWith('h')) {
+              const level = parseInt(value[1]);
               editor.chain().focus().toggleHeading({ level }).run();
             }
-            e.target.value = 'p';
           }}
           className="tiptap-select"
           title="Paragraph Format"
@@ -460,6 +643,46 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
           <option value="h4">Heading 4</option>
           <option value="h5">Heading 5</option>
           <option value="h6">Heading 6</option>
+        </select>
+
+        <select
+          value={fontValue}
+          onChange={(e) => {
+            const value = e.target.value;
+            setFontValue(value);
+            if (value) {
+              handleFontChange(value);
+            }
+          }}
+          className="tiptap-select"
+          title="Font Family"
+        >
+          <option value="">Font</option>
+          {FONTS.map((font) => (
+            <option key={font.value} value={font.value}>
+              {font.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sizeValue}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSizeValue(value);
+            if (value) {
+              handleFontSizeChange(value);
+            }
+          }}
+          className="tiptap-select"
+          title="Font Size"
+        >
+          <option value="">Size</option>
+          {FONT_SIZES.map((size) => (
+            <option key={size.value} value={size.value}>
+              {size.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -493,29 +716,62 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
 
       {/* Color Group */}
       <div className="tiptap-toolbar-group">
-        <div className="tiptap-color-group">
-          <input
-            type="color"
-            onChange={(event) =>
-              editor.chain().focus().setColor(event.target.value).run()
-            }
-            value={editor.getAttributes('textStyle').color || '#000000'}
+        <div className="tiptap-dropdown-group">
+          <button
+            type="button"
+            className="tiptap-toolbar-btn dropdown-btn"
+            onClick={() => setTextColorDropdown(!textColorDropdown)}
             title="Text Color"
-            className="tiptap-color-input"
-          />
-          <span className="tiptap-color-label">Text</span>
+          >
+            <Icons.TextColor />
+          </button>
+          {textColorDropdown && (
+            <div className="tiptap-dropdown-menu">
+              {TEXT_COLORS.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  className="tiptap-dropdown-item"
+                  onClick={() => {
+                    editor.chain().focus().setColor(color.value).run();
+                    setTextColorDropdown(false);
+                  }}
+                  style={{ borderLeft: `4px solid ${color.value}` }}
+                >
+                  {color.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="tiptap-color-group">
-          <input
-            type="color"
-            onChange={(event) =>
-              editor.chain().focus().toggleHighlight({ color: event.target.value }).run()
-            }
-            defaultValue={'#FFFF00'}
+
+        <div className="tiptap-dropdown-group">
+          <button
+            type="button"
+            className="tiptap-toolbar-btn dropdown-btn"
+            onClick={() => setHighlightDropdown(!highlightDropdown)}
             title="Highlight Color"
-            className="tiptap-color-input"
-          />
-          <span className="tiptap-color-label">Highlight</span>
+          >
+            <Icons.Highlight />
+          </button>
+          {highlightDropdown && (
+            <div className="tiptap-dropdown-menu">
+              {HIGHLIGHT_COLORS.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  className="tiptap-dropdown-item"
+                  onClick={() => {
+                    editor.chain().focus().toggleHighlight({ color: color.value }).run();
+                    setHighlightDropdown(false);
+                  }}
+                  style={{ borderLeft: `4px solid ${color.value}` }}
+                >
+                  {color.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -526,12 +782,6 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
           isActive={editor.isActive('link')}
           title="Insert Link"
           icon={Icons.Link}
-        />
-        <ToolbarButton
-          onClick={removeLink}
-          disabled={!editor.isActive('link')}
-          title="Remove Link"
-          icon={Icons.LinkOff}
         />
         <ToolbarButton
           onClick={insertImage}
@@ -598,33 +848,46 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
 
       {/* Table Group */}
       <div className="tiptap-toolbar-group">
-        <ToolbarButton
-          onClick={insertTable}
-          title="Insert Table"
-          icon={Icons.Table}
-        />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().deleteTable().run()}
-          disabled={!editor.isActive('table')}
-          title="Delete Table"
-          icon={Icons.TableDelete}
-        />
+        <div className="tiptap-dropdown-group">
+          <button
+            type="button"
+            className="tiptap-toolbar-btn dropdown-btn"
+            onClick={() => setTableDropdown(!tableDropdown)}
+            title="Insert Table"
+          >
+            <Icons.Table />
+          </button>
+          {tableDropdown && (
+            <div className="tiptap-table-grid">
+              {Array.from({ length: 8 }).map((_, row) =>
+                Array.from({ length: 8 }).map((_, col) => (
+                  <button
+                    key={`${row}-${col}`}
+                    type="button"
+                    className="tiptap-table-cell"
+                    onMouseEnter={() => {
+                      // Visual feedback
+                      const cells = document.querySelectorAll('.tiptap-table-cell');
+                      cells.forEach((cell, idx) => {
+                        const r = Math.floor(idx / 8);
+                        const c = idx % 8;
+                        cell.classList.toggle(
+                          'active',
+                          r <= row && c <= col
+                        );
+                      });
+                    }}
+                    onClick={() => insertTable(row + 1, col + 1)}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Block Elements Group */}
       <div className="tiptap-toolbar-group">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          isActive={editor.isActive('codeBlock')}
-          title="Code Block"
-          icon={Icons.Code}
-        />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          isActive={editor.isActive('blockquote')}
-          title="Block Quote"
-          icon={Icons.Quote}
-        />
         <ToolbarButton
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Horizontal Rule"
@@ -639,11 +902,30 @@ function MenuBar({ editor, isDarkMode, onCodeClick }: MenuBarProps) {
           title="Insert Date/Time"
           icon={Icons.Calendar}
         />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().clearNodes().run()}
-          title="Clear Formatting"
-          icon={Icons.ClearFormat}
-        />
+        <div className="tiptap-dropdown-group">
+          <button
+            type="button"
+            className="tiptap-toolbar-btn dropdown-btn"
+            onClick={() => setEmojiDropdown(!emojiDropdown)}
+            title="Insert Emoji"
+          >
+            <Icons.Emoji />
+          </button>
+          {emojiDropdown && (
+            <div className="tiptap-emoji-grid">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className="tiptap-emoji-btn"
+                  onClick={() => insertEmoji(emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -682,6 +964,7 @@ function ToolbarButton({
       disabled={disabled}
       className={`tiptap-toolbar-btn ${isActive ? 'active' : ''}`}
       title={title}
+      type="button"
     >
       <Icon />
     </button>
