@@ -39,7 +39,7 @@ export function useGetCurrencySeparators(
     let separators: DecimalInputSeparators | undefined;
 
     // Only fetch client data if user has permission to view clients
-    if (relationId.length >= 1 && relationType === 'client_id' && hasPermission('view_client')) {
+    if (relationId.length >= 1 && relationType === 'client_id' && (hasPermission('view_client') || hasPermission('edit_client'))) {
       await clientResolver.find(relationId).then(async (client: Client) => {
         await currencyResolver
           .find(client.settings.currency_id || company.settings?.currency_id)
@@ -66,7 +66,7 @@ export function useGetCurrencySeparators(
           });
       });
     // Only fetch vendor data if user has permission to view vendors  
-    } else if (relationId.length >= 1 && relationType === 'vendor_id' && hasPermission('view_vendor')) {
+    } else if (relationId.length >= 1 && relationType === 'vendor_id' && (hasPermission('view_vendor') || hasPermission('edit_vendor'))) {
       await vendorResolver.find(relationId).then(async (vendor: Vendor) => {
         await currencyResolver
           .find(vendor.currency_id || company.settings?.currency_id)
