@@ -61,7 +61,7 @@ export default function Create() {
     },
   ]);
 
-  const tabs = useTabs();
+  const tabs = useTabs({ client });
 
   const { data: blankClient } = useBlankClientQuery({});
 

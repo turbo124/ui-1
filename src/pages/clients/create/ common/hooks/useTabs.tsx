@@ -9,9 +9,14 @@
  */
 
 import { Tab } from '$app/components/Tabs';
+import { Client } from '$app/common/interfaces/client';
 import { useTranslation } from 'react-i18next';
 
-export function useTabs() {
+interface UseTabsProps {
+  client?: Client;
+}
+
+export function useTabs({ client }: UseTabsProps) {
   const [t] = useTranslation();
 
   const tabs: Tab[] = [
@@ -30,6 +35,7 @@ export function useTabs() {
     {
       name: t('locations'),
       href: '/clients/create/locations',
+      enabled: Boolean(client?.id),
     },
   ];
 
