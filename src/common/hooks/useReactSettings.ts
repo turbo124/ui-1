@@ -11,8 +11,8 @@
 import { RootState } from '$app/common/stores/store';
 import { useSelector } from 'react-redux';
 import { useInjectUserChanges } from './useInjectUserChanges';
-import { merge } from 'lodash';
 import { useMemo } from 'react';
+import { cloneDeep } from 'lodash';
 import { Record as ClientMapRecord } from '../constants/exports/client-map';
 import { Entity } from '$app/components/CommonActionsPreferenceModal';
 import { PerPage } from '$app/components/DataTable';
@@ -121,51 +121,66 @@ interface Options {
 export function useReactSettings(options?: Options) {
   const user = useInjectUserChanges({ overwrite: options?.overwrite });
 
-  // Use shallowEqual to prevent unnecessary re-renders when the object reference changes
-  // but the content is the same
   const reactSettings = useSelector(
-    (state: RootState) => state.user.changes?.company_user?.react_settings || {},
-    (left, right) => {
-      // Custom equality check - only re-render if the actual settings changed
-      if (left === right) return true;
-      if (!left || !right) return false;
-      
-      // Check top-level keys
-      const leftKeys = Object.keys(left);
-      const rightKeys = Object.keys(right);
-      
-      if (leftKeys.length !== rightKeys.length) return false;
-      
-      return leftKeys.every(key => left[key] === right[key]);
-    }
+    (state: RootState) => state.user.changes?.company_user?.react_settings
   );
 
   const previousReactTableColumns =
     user?.company_user?.settings?.react_table_columns;
 
-  // Memoize the expensive merge operation
-  // This prevents recreating the entire settings object on every render
+  // Memoize the settings computation to prevent unnecessary recalculations
+  // We use cloneDeep to avoid mutation of the shared preferencesDefaults object
+  // The memoization only recomputes when reactSettings or previousReactTableColumns change
   return useMemo(() => {
+    // Start with a deep clone of defaults to prevent any mutation issues
+    const basePreferences = cloneDeep(preferencesDefaults);
+    
     const settings: ReactSettings = {
       show_pdf_preview: true,
       react_notification_link: true,
-      // This is legacy fallback for old settings location. If you see this in 2 years, feel free to remove it.
-      react_table_columns: {
-        ...previousReactTableColumns,
-        ...reactSettings.react_table_columns,
-      },
-      // Deep clone is expensive - we can safely use the defaults object directly
-      // since we merge over it and don't mutate it
-      preferences: { ...preferencesDefaults },
+      preferences: basePreferences,
     };
 
-    return merge<ReactSettings, ReactSettings>(
-      { ...settings },
-      { ...reactSettings }
-    );
+    // Manually merge to avoid lodash.merge mutation issues
+    // Spread operator for top-level is safe and fast
+    const result = { ...settings, ...reactSettings };
+    
+    // Handle nested react_table_columns merge (legacy fallback)
+    if (previousReactTableColumns || reactSettings?.react_table_columns) {
+      result.react_table_columns = {
+        ...previousReactTableColumns,
+        ...reactSettings?.react_table_columns,
+      };
+    }
+    
+    // Deep merge preferences if user has custom preferences
+    if (reactSettings?.preferences) {
+      result.preferences = {
+        ...basePreferences,
+        ...reactSettings.preferences,
+        // Handle nested objects in preferences
+        dashboard_charts: {
+          ...basePreferences.dashboard_charts,
+          ...reactSettings.preferences.dashboard_charts,
+        },
+        datatables: {
+          ...basePreferences.datatables,
+          ...reactSettings.preferences.datatables,
+          clients: {
+            ...basePreferences.datatables.clients,
+            ...reactSettings.preferences.datatables?.clients,
+          },
+        },
+        reports: {
+          ...basePreferences.reports,
+          ...reactSettings.preferences.reports,
+        },
+      };
+    }
+    
+    return result;
   }, [
     previousReactTableColumns,
     reactSettings,
-    // We deliberately omit 'user' here as we only need the specific derived value
   ]);
 }
