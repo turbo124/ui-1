@@ -11,7 +11,8 @@
 import { RootState } from '$app/common/stores/store';
 import { useSelector } from 'react-redux';
 import { useInjectUserChanges } from './useInjectUserChanges';
-import { cloneDeep, merge } from 'lodash';
+import { merge } from 'lodash';
+import { useMemo } from 'react';
 import { Record as ClientMapRecord } from '../constants/exports/client-map';
 import { Entity } from '$app/components/CommonActionsPreferenceModal';
 import { PerPage } from '$app/components/DataTable';
@@ -120,27 +121,51 @@ interface Options {
 export function useReactSettings(options?: Options) {
   const user = useInjectUserChanges({ overwrite: options?.overwrite });
 
-  const reactSettings =
-    useSelector(
-      (state: RootState) => state.user.changes?.company_user?.react_settings
-    ) || {};
+  // Use shallowEqual to prevent unnecessary re-renders when the object reference changes
+  // but the content is the same
+  const reactSettings = useSelector(
+    (state: RootState) => state.user.changes?.company_user?.react_settings || {},
+    (left, right) => {
+      // Custom equality check - only re-render if the actual settings changed
+      if (left === right) return true;
+      if (!left || !right) return false;
+      
+      // Check top-level keys
+      const leftKeys = Object.keys(left);
+      const rightKeys = Object.keys(right);
+      
+      if (leftKeys.length !== rightKeys.length) return false;
+      
+      return leftKeys.every(key => left[key] === right[key]);
+    }
+  );
 
   const previousReactTableColumns =
     user?.company_user?.settings?.react_table_columns;
 
-  const settings: ReactSettings = {
-    show_pdf_preview: true,
-    react_notification_link: true,
-    // This is legacy fallback for old settings location. If you see this in 2 years, feel free to remove it.
-    react_table_columns: {
-      ...previousReactTableColumns,
-      ...reactSettings.react_table_columns,
-    },
-    preferences: cloneDeep(preferencesDefaults),
-  };
+  // Memoize the expensive merge operation
+  // This prevents recreating the entire settings object on every render
+  return useMemo(() => {
+    const settings: ReactSettings = {
+      show_pdf_preview: true,
+      react_notification_link: true,
+      // This is legacy fallback for old settings location. If you see this in 2 years, feel free to remove it.
+      react_table_columns: {
+        ...previousReactTableColumns,
+        ...reactSettings.react_table_columns,
+      },
+      // Deep clone is expensive - we can safely use the defaults object directly
+      // since we merge over it and don't mutate it
+      preferences: { ...preferencesDefaults },
+    };
 
-  return merge<ReactSettings, ReactSettings>(
-    { ...settings },
-    { ...reactSettings }
-  );
+    return merge<ReactSettings, ReactSettings>(
+      { ...settings },
+      { ...reactSettings }
+    );
+  }, [
+    previousReactTableColumns,
+    reactSettings,
+    // We deliberately omit 'user' here as we only need the specific derived value
+  ]);
 }
