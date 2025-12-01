@@ -163,16 +163,16 @@ export function App() {
   }, [darkMode, resolvedLanguage]);
 
   useEffect(() => {
-    window.addEventListener('reset.password.required', () => {
-      setIsPasswordRequired(false);
-    });
+  window.addEventListener('reset.password.required', () => {
+    setIsPasswordRequired(false);
+  });
 
-    window.addEventListener('refetch', (event) => {
-      const { property } = (event as CustomEvent).detail;
+  window.addEventListener('refetch', (event) => {
+    const { property, options } = (event as CustomEvent).detail;
 
-      refetch(property);
-    });
-  }, []);
+    refetch(property, options);
+  });
+}, []);
 
   useEffect(() => {
     window.removeEventListener('display.error.toaster', handleToasterErrors);

@@ -233,29 +233,116 @@ export const keys = {
 
 export type RefetchKey = keyof typeof keys;
 
+/**
+ * Determines which dependencies actually need to be invalidated.
+ * 
+ * RULES:
+ * 1. Charts ALWAYS need updates (they aggregate data)
+ * 2. Activities ALWAYS need updates (they show history)
+ * 3. Documents for the SAME entity need updates
+ * 4. Related entities (clients, vendors) DO NOT need invalidation by default
+ *    - Client list doesn't change when invoice amount changes
+ *    - Use deep:true if you need the old cascade behavior
+ */
+function getSmartDependencies(key: RefetchKey): string[] {
+  const allDeps = keys[key].dependencies;
+  
+  // Filter to only "smart" dependencies that should auto-update
+  return allDeps.filter(dep => {
+    // Always invalidate charts - they aggregate data across entities
+    if (dep.includes('/charts/')) return true;
+    
+    // Always invalidate activities - they show entity change history
+    if (dep.includes('/activities')) return true;
+    
+    // Always invalidate documents - they're directly attached to entity
+    if (dep === '/api/v1/documents') return true;
+    
+    // DO NOT automatically invalidate related entities to prevent cascades
+    // Examples of what we're filtering OUT:
+    // - /api/v1/clients (client list doesn't change when invoice amount changes)
+    // - /api/v1/invoices (invoice list doesn't change when payment is made)
+    // - /api/v1/tasks (task list doesn't change when project name changes)
+    // 
+    // If you need these, use $refetch(['invoices'], { deep: true })
+    return false;
+  });
+}
+
 export function useRefetch() {
   const queryClient = useQueryClient();
 
-  return (property: Array<keyof typeof keys>) => {
-    property.map((key) => {
+  return (
+    property: Array<keyof typeof keys>,
+    options: { deep?: boolean } = {}
+  ) => {
+    const { deep = false } = options;
+
+    property.forEach((key) => {
       if (!keys[key]) {
+        console.warn(`[useRefetch] Unknown refetch key: ${String(key)}`);
         return;
       }
 
-      queryClient.invalidateQueries(keys[key].path);
+      const entityPath = keys[key].path;
 
-      keys[key].dependencies.map((dependency) => {
-        queryClient.invalidateQueries(dependency);
+      // Invalidate the main entity queries
+      // Only invalidate queries that actually exist in the cache
+      const cachedQueries = queryClient
+        .getQueryCache()
+        .findAll({ predicate: (query) => {
+          const queryKey = query.queryKey;
+          if (Array.isArray(queryKey)) {
+            return queryKey[0] === entityPath || 
+                   (typeof queryKey[0] === 'string' && queryKey[0].startsWith(entityPath));
+          }
+          return queryKey === entityPath;
+        }});
+
+      cachedQueries.forEach((query) => {
+        queryClient.invalidateQueries({ queryKey: query.queryKey });
       });
+
+      // Handle dependencies based on the deep flag
+      if (deep) {
+        // OLD BEHAVIOR: Invalidate all dependencies (use sparingly)
+        keys[key].dependencies.forEach((dependency) => {
+          queryClient.invalidateQueries(dependency);
+        });
+      } else {
+        // NEW BEHAVIOR: Only invalidate "smart" dependencies
+        // These are dependencies that actually need to update when the entity changes
+        const smartDeps = getSmartDependencies(key);
+        smartDeps.forEach((dependency) => {
+          const depQueries = queryClient
+            .getQueryCache()
+            .findAll({ predicate: (query) => {
+              const queryKey = query.queryKey;
+              if (Array.isArray(queryKey)) {
+                return queryKey[0] === dependency || 
+                       (typeof queryKey[0] === 'string' && queryKey[0].startsWith(dependency));
+              }
+              return queryKey === dependency;
+            }});
+          
+          depQueries.forEach((query) => {
+            queryClient.invalidateQueries({ queryKey: query.queryKey });
+          });
+        });
+      }
     });
   };
 }
 
-export function $refetch(property: Array<RefetchKey>) {
+export function $refetch(
+  property: Array<RefetchKey>,
+  options?: { deep?: boolean }
+) {
   window.dispatchEvent(
     new CustomEvent('refetch', {
       detail: {
         property,
+        options,
       },
     })
   );
