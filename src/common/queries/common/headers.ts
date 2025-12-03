@@ -10,11 +10,19 @@
 
 import { isHosted } from '$app/common/helpers';
 import { socketId } from '../sockets';
-import { getCompanyItem } from '$app/common/helpers/company-storage';
+import { 
+  getCompanyItem, 
+  getCurrentCompanyIndex, 
+  getCompanyIdForIndex 
+} from '$app/common/helpers/company-storage';
 
 export function defaultHeaders() {
+  // Get current company ID from index
+  const currentIndex = getCurrentCompanyIndex();
+  const companyId = getCompanyIdForIndex(currentIndex);
+  
   const headers: Record<string, string | number | boolean> = {
-    'X-Api-Token': getCompanyItem('X-NINJA-TOKEN') as string,
+    'X-Api-Token': (companyId ? getCompanyItem('X-NINJA-TOKEN', companyId) : getCompanyItem('X-NINJA-TOKEN')) as string,
     'X-Requested-With': 'XMLHttpRequest',
     'X-React': 'true',
   };
