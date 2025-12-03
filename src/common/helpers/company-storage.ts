@@ -11,17 +11,29 @@
 /**
  * Company-scoped localStorage abstraction.
  * Each company has isolated storage - Company A cannot see Company B's data.
- * All storage keys are namespaced by company ID.
+ * 
+ * ARCHITECTURE:
+ * - Auth tokens are stored GLOBALLY (not company-scoped) for authentication
+ * - Current company ID is stored GLOBALLY to track user's current context
+ * - Company-specific data (settings, preferences) is namespaced by company ID
  */
 
 const GLOBAL_CURRENT_INDEX_KEY = 'X-CURRENT-INDEX';
+const GLOBAL_COMPANY_ID_KEY = 'X-CURRENT-COMPANY-ID';
+const GLOBAL_AUTH_TOKEN_KEY = 'X-NINJA-TOKEN';
 
 /**
- * Get the current company ID from localStorage or passed parameter
+ * INTERNAL: Get the current company ID from localStorage or passed parameter
  */
-function getCurrentCompanyId(companyId?: string): string | null {
+function getCompanyIdInternal(companyId?: string): string | null {
   if (companyId) {
     return companyId;
+  }
+  
+  // First try to get from the global current company ID
+  const globalCompanyId = localStorage.getItem(GLOBAL_COMPANY_ID_KEY);
+  if (globalCompanyId) {
+    return globalCompanyId;
   }
   
   // Try to get from current index in localStorage
@@ -48,7 +60,7 @@ function getCurrentCompanyId(companyId?: string): string | null {
  * Generate namespaced key for company-specific storage
  */
 function getNamespacedKey(key: string, companyId?: string): string {
-  const currentCompanyId = getCurrentCompanyId(companyId);
+  const currentCompanyId = getCompanyIdInternal(companyId);
   
   if (!currentCompanyId) {
     // Fallback to non-namespaced for backwards compatibility during migration
@@ -86,7 +98,7 @@ export function removeCompanyItem(key: string, companyId?: string): void {
  * Clear all storage for the current company
  */
 export function clearCompanyStorage(companyId?: string): void {
-  const currentCompanyId = getCurrentCompanyId(companyId);
+  const currentCompanyId = getCompanyIdInternal(companyId);
   
   if (!currentCompanyId) {
     return;
@@ -124,9 +136,11 @@ export function clearAllCompanyStorage(): void {
   // Remove them
   keysToRemove.forEach(key => localStorage.removeItem(key));
   
-  // Also clear the company ID mapping
+  // Also clear the company ID mapping and global keys
   localStorage.removeItem('X-COMPANY-ID-MAPPING');
   localStorage.removeItem(GLOBAL_CURRENT_INDEX_KEY);
+  localStorage.removeItem(GLOBAL_COMPANY_ID_KEY);
+  localStorage.removeItem(GLOBAL_AUTH_TOKEN_KEY);
 }
 
 /**
@@ -190,33 +204,38 @@ export function clearCurrentCompanyIndex(): void {
 }
 
 /**
+ * Set the global current company ID (used when switching companies)
+ */
+export function setCurrentCompanyId(companyId: string): void {
+  localStorage.setItem(GLOBAL_COMPANY_ID_KEY, companyId);
+}
+
+/**
+ * Get the global current company ID
+ */
+export function getCurrentCompanyId(): string | null {
+  return localStorage.getItem(GLOBAL_COMPANY_ID_KEY);
+}
+
+/**
+ * Set the global auth token (not company-scoped)
+ */
+export function setGlobalAuthToken(token: string): void {
+  localStorage.setItem(GLOBAL_AUTH_TOKEN_KEY, token);
+}
+
+/**
+ * Get the global auth token (not company-scoped)
+ */
+export function getGlobalAuthToken(): string | null {
+  return localStorage.getItem(GLOBAL_AUTH_TOKEN_KEY);
+}
+
+/**
  * Check if ANY X-NINJA-TOKEN exists in localStorage (for initial auth check)
  * This is used during page load to determine if user was previously authenticated
  */
 export function hasAnyToken(): boolean {
-  // First check if we have a token for the current company
-  const currentIndex = getCurrentCompanyIndex();
-  const companyId = getCompanyIdForIndex(currentIndex);
-  
-  if (companyId) {
-    const token = getCompanyItem('X-NINJA-TOKEN', companyId);
-    if (token) {
-      return true;
-    }
-  }
-  
-  // Fallback: check for any company_*_X-NINJA-TOKEN in localStorage
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.includes('_X-NINJA-TOKEN')) {
-      return true;
-    }
-  }
-  
-  // Legacy fallback: check for non-namespaced token
-  if (localStorage.getItem('X-NINJA-TOKEN')) {
-    return true;
-  }
-  
-  return false;
+  // Check for global auth token
+  return !!getGlobalAuthToken();
 }

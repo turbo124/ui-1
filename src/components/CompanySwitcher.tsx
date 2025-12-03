@@ -35,7 +35,7 @@ import { useCurrentUser } from '$app/common/hooks/useCurrentUser';
 import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { useColorScheme } from '$app/common/colors';
 import companySettings from '$app/common/constants/company-settings';
-import { setCompanyIdMapping, setCurrentCompanyIndex, setCompanyItem } from '$app/common/helpers/company-storage';
+import { setCompanyIdMapping, setCurrentCompanyIndex, setCompanyItem, setCurrentCompanyId, setGlobalAuthToken } from '$app/common/helpers/company-storage';
 
 const SwitcherDiv = styled.div`
   &:hover {
@@ -88,8 +88,12 @@ export function CompanySwitcher() {
     // Update company ID mapping and current index
     if (state.api[index]?.company?.id) {
       setCompanyIdMapping(index, state.api[index].company.id);
+      setCurrentCompanyId(state.api[index].company.id);
     }
     setCurrentCompanyIndex(index);
+    
+    // Update the global auth token to the selected company's token
+    setGlobalAuthToken(state.api[index].token.token);
     
     // Store COMPANY-EDIT-OPENED in company-scoped storage
     setCompanyItem('COMPANY-EDIT-OPENED', 'false');

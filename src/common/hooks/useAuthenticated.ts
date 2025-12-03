@@ -24,14 +24,13 @@ import { authenticate } from '../stores/slices/user';
 import { RootState } from '../stores/store';
 import dayjs from 'dayjs';
 import { 
-  getCompanyItem, 
   setCompanyIdMapping, 
   setCurrentCompanyIndex, 
-  removeCompanyItem,
   getCurrentCompanyIndex,
   getCompanyIdForIndex,
-  setCompanyItem,
   hasAnyToken,
+  setCurrentCompanyId,
+  setGlobalAuthToken,
 } from '../helpers/company-storage';
 
 export function useAuthenticated(): boolean {
@@ -65,8 +64,6 @@ export function useAuthenticated(): boolean {
         companyUsers.forEach((companyUser, index) => {
           if (companyUser.company?.id) {
             setCompanyIdMapping(index, companyUser.company.id);
-            // Store token for each company
-            setCompanyItem('X-NINJA-TOKEN', companyUser.token.token, companyUser.company.id);
           }
         });
 
@@ -86,14 +83,19 @@ export function useAuthenticated(): boolean {
 
         setCurrentCompanyIndex(currentIndex);
         
-        // Get the company ID for the current index
-        const selectedCompanyId = getCompanyIdForIndex(currentIndex);
+        // Set the current company ID globally
+        if (companyUsers[currentIndex]?.company?.id) {
+          setCurrentCompanyId(companyUsers[currentIndex].company.id);
+        }
+        
+        // Update the global auth token (it may have been refreshed)
+        setGlobalAuthToken(companyUsers[currentIndex].token.token);
 
         dispatch(
           authenticate({
             type: AuthenticationTypes.TOKEN,
             user: response.data.data[currentIndex].user,
-            token: selectedCompanyId ? getCompanyItem('X-NINJA-TOKEN', selectedCompanyId) as string : companyUsers[currentIndex].token.token,
+            token: companyUsers[currentIndex].token.token,
           })
         );
 
@@ -103,8 +105,6 @@ export function useAuthenticated(): boolean {
       })
       .catch((e) => {
         console.error(e);
-
-        removeCompanyItem('X-NINJA-TOKEN');
 
         navigate('/login');
       })

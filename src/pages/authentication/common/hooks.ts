@@ -21,8 +21,9 @@ import { useDispatch } from 'react-redux';
 import {
   clearCurrentCompanyIndex,
   setCompanyIdMapping,
-  setCompanyItem,
   setCurrentCompanyIndex,
+  setCurrentCompanyId,
+  setGlobalAuthToken,
 } from '$app/common/helpers/company-storage';
 
 export function useLogin() {
@@ -35,12 +36,10 @@ export function useLogin() {
 
     const companyUsers: CompanyUser[] = response.data.data;
 
-    // Store ALL company tokens, not just the default one
-    // This ensures that /refresh can work from any tab
+    // Store company ID mappings for all companies
     companyUsers.forEach((companyUser, index) => {
-      if (companyUser.company?.id && companyUser.token?.token) {
+      if (companyUser.company?.id) {
         setCompanyIdMapping(index, companyUser.company.id);
-        setCompanyItem('X-NINJA-TOKEN', companyUser.token.token, companyUser.company.id);
       }
     });
 
@@ -56,6 +55,15 @@ export function useLogin() {
 
     // Set the current company index
     setCurrentCompanyIndex(currentIndex);
+    
+    // Set the current company ID globally
+    if (companyUsers[currentIndex]?.company?.id) {
+      setCurrentCompanyId(companyUsers[currentIndex].company.id);
+    }
+    
+    // Store the token GLOBALLY (not company-scoped)
+    // This allows any tab to authenticate and then get company list via /refresh
+    setGlobalAuthToken(companyUsers[currentIndex].token.token);
 
     dispatch(
       authenticate({

@@ -29,8 +29,9 @@ import AppleSignin from 'react-apple-signin-auth';
 import {
   clearCurrentCompanyIndex,
   setCompanyIdMapping,
-  setCompanyItem,
   setCurrentCompanyIndex,
+  setCurrentCompanyId,
+  setGlobalAuthToken,
 } from '$app/common/helpers/company-storage';
 
 interface SignInProviderButtonProps {
@@ -61,11 +62,10 @@ export function SignInProviders() {
 
     const companyUsers: CompanyUser[] = response.data.data;
 
-    // Store ALL company tokens, not just the default one
+    // Store company ID mappings for all companies
     companyUsers.forEach((companyUser, index) => {
-      if (companyUser.company?.id && companyUser.token?.token) {
+      if (companyUser.company?.id) {
         setCompanyIdMapping(index, companyUser.company.id);
-        setCompanyItem('X-NINJA-TOKEN', companyUser.token.token, companyUser.company.id);
       }
     });
 
@@ -78,6 +78,14 @@ export function SignInProviders() {
 
     // Set the current company index
     setCurrentCompanyIndex(currentIndex);
+    
+    // Set the current company ID globally
+    if (companyUsers[currentIndex]?.company?.id) {
+      setCurrentCompanyId(companyUsers[currentIndex].company.id);
+    }
+    
+    // Store the token GLOBALLY (not company-scoped)
+    setGlobalAuthToken(companyUsers[currentIndex].token.token);
 
     dispatch(
       authenticate({

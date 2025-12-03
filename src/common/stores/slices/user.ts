@@ -11,7 +11,12 @@
 import { set } from 'lodash';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Authenticated, Registered } from '../../dtos/authentication';
-import { setCompanyItem, setCompanyIdMapping, setCurrentCompanyIndex } from '../../helpers/company-storage';
+import { 
+  setCompanyIdMapping, 
+  setCurrentCompanyIndex,
+  setCurrentCompanyId,
+  setGlobalAuthToken,
+} from '../../helpers/company-storage';
 
 interface UserState {
   authenticated: boolean;
@@ -45,23 +50,24 @@ export const userSlice = createSlice({
       state.authenticated = true;
       state.user = action.payload.user;
 
-      // Note: Token storage is handled by useLogin() hook which stores ALL company tokens
+      // Note: Token storage is handled by useLogin() hook which stores global auth token
       // This reducer just updates Redux state
     },
     register: (state, action: PayloadAction<Registered>) => {
       state.authenticated = true;
       state.user = action.payload.user;
 
-      // Store token in company-scoped storage
+      // Store token globally (not company-scoped)
       const userWithCompany = action.payload.user as any;
       if (userWithCompany?.company_user?.company?.id) {
         const companyId = userWithCompany.company_user.company.id;
         setCompanyIdMapping(0, companyId);
         setCurrentCompanyIndex(0);
-        setCompanyItem('X-NINJA-TOKEN', action.payload.token, companyId);
+        setCurrentCompanyId(companyId);
+        setGlobalAuthToken(action.payload.token);
       } else {
-        // Fallback for backward compatibility
-        setCompanyItem('X-NINJA-TOKEN', action.payload.token);
+        // Fallback: just store the token globally
+        setGlobalAuthToken(action.payload.token);
       }
     },
     updateChanges: (
