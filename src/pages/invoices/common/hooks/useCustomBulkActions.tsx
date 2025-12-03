@@ -20,6 +20,7 @@ import {
   MdMarkEmailRead,
   MdPaid,
   MdPrint,
+  MdRefresh,
   MdArchive,
   MdRestore
 } from 'react-icons/md';
@@ -119,7 +120,7 @@ export const useCustomBulkActions = () => {
   };
 
   const showReverseOption = (invoices: Invoice[]) => {
-    return !invoices.some(
+    return !verifactuEnabled && !invoices.some(
       ({ status_id, is_deleted, archived_at }) =>
         (status_id !== InvoiceStatus.Paid &&
           status_id !== InvoiceStatus.Partial) ||
@@ -258,19 +259,20 @@ export const useCustomBulkActions = () => {
           {t('documents')}
         </DropdownElement>
       ),
-    // ({ selectedResources, setSelected }) =>
-    //   showReverseOption(selectedResources) &&
-    //   hasPermission('create_credit') && (
-    //     <DropdownElement
-    //       onClick={() => {
-    //         reverseInvoice(selectedResources[0]);
-    //         setSelected([]);
-    //       }}
-    //       icon={<Icon element={MdRefresh} />}
-    //     >
-    //       {t('reverse')}
-    //     </DropdownElement>
-    //   ),
+    ({ selectedResources, setSelected }) =>
+      
+      showReverseOption(selectedResources) &&
+      hasPermission('create_credit') && (
+        <DropdownElement
+          onClick={() => {
+            reverseInvoice(selectedResources[0]);
+            setSelected([]);
+          }}
+          icon={<Icon element={MdRefresh} />}
+        >
+          {t('reverse')}
+        </DropdownElement>
+      ),
     ({ selectedIds, selectedResources, setSelected }) => (
       showCancelOption(selectedResources) && (
       <CancelInvoiceBulkAction
