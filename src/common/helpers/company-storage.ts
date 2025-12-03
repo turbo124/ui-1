@@ -188,3 +188,35 @@ export function getCurrentCompanyIndex(): number {
 export function clearCurrentCompanyIndex(): void {
   localStorage.removeItem(GLOBAL_CURRENT_INDEX_KEY);
 }
+
+/**
+ * Check if ANY X-NINJA-TOKEN exists in localStorage (for initial auth check)
+ * This is used during page load to determine if user was previously authenticated
+ */
+export function hasAnyToken(): boolean {
+  // First check if we have a token for the current company
+  const currentIndex = getCurrentCompanyIndex();
+  const companyId = getCompanyIdForIndex(currentIndex);
+  
+  if (companyId) {
+    const token = getCompanyItem('X-NINJA-TOKEN', companyId);
+    if (token) {
+      return true;
+    }
+  }
+  
+  // Fallback: check for any company_*_X-NINJA-TOKEN in localStorage
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.includes('_X-NINJA-TOKEN')) {
+      return true;
+    }
+  }
+  
+  // Legacy fallback: check for non-namespaced token
+  if (localStorage.getItem('X-NINJA-TOKEN')) {
+    return true;
+  }
+  
+  return false;
+}

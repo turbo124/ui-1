@@ -21,8 +21,27 @@ export function defaultHeaders() {
   const currentIndex = getCurrentCompanyIndex();
   const companyId = getCompanyIdForIndex(currentIndex);
   
+  // Try company-scoped token first, then fallback to ANY token we can find
+  let token = companyId ? getCompanyItem('X-NINJA-TOKEN', companyId) : null;
+  
+  // If no company-scoped token, search for ANY token (for /refresh call)
+  if (!token) {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('_X-NINJA-TOKEN')) {
+        token = localStorage.getItem(key);
+        break;
+      }
+    }
+    
+    // Legacy fallback
+    if (!token) {
+      token = localStorage.getItem('X-NINJA-TOKEN');
+    }
+  }
+  
   const headers: Record<string, string | number | boolean> = {
-    'X-Api-Token': (companyId ? getCompanyItem('X-NINJA-TOKEN', companyId) : getCompanyItem('X-NINJA-TOKEN')) as string,
+    'X-Api-Token': token as string,
     'X-Requested-With': 'XMLHttpRequest',
     'X-React': 'true',
   };

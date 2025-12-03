@@ -26,7 +26,12 @@ import { toast } from '$app/common/helpers/toast/toast';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { v4 } from 'uuid';
 import AppleSignin from 'react-apple-signin-auth';
-import { clearCurrentCompanyIndex } from '$app/common/helpers/company-storage';
+import {
+  clearCurrentCompanyIndex,
+  setCompanyIdMapping,
+  setCompanyItem,
+  setCurrentCompanyIndex,
+} from '$app/common/helpers/company-storage';
 
 interface SignInProviderButtonProps {
   disabled?: boolean;
@@ -55,12 +60,24 @@ export function SignInProviders() {
     let currentIndex = 0;
 
     const companyUsers: CompanyUser[] = response.data.data;
+
+    // Store ALL company tokens, not just the default one
+    companyUsers.forEach((companyUser, index) => {
+      if (companyUser.company?.id && companyUser.token?.token) {
+        setCompanyIdMapping(index, companyUser.company.id);
+        setCompanyItem('X-NINJA-TOKEN', companyUser.token.token, companyUser.company.id);
+      }
+    });
+
     const defaultCompanyId = companyUsers[0].account.default_company_id;
 
     currentIndex =
       companyUsers.findIndex(
         (companyUser) => companyUser.company.id === defaultCompanyId
       ) || 0;
+
+    // Set the current company index
+    setCurrentCompanyIndex(currentIndex);
 
     dispatch(
       authenticate({

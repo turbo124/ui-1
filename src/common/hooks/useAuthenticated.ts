@@ -31,23 +31,20 @@ import {
   getCurrentCompanyIndex,
   getCompanyIdForIndex,
   setCompanyItem,
+  hasAnyToken,
 } from '../helpers/company-storage';
 
 export function useAuthenticated(): boolean {
   const user = useSelector((state: RootState) => state.user);
   
-  // Get current company index and ID
-  const currentIndex = getCurrentCompanyIndex();
-  const companyId = getCompanyIdForIndex(currentIndex);
-  
-  // Get token for current company
-  const token = companyId ? getCompanyItem('X-NINJA-TOKEN', companyId) : null;
+  // Check if ANY token exists (company-scoped or legacy)
+  const hasToken = hasAnyToken();
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
 
-  if (token === null) {
+  if (!hasToken) {
     return false;
   }
 

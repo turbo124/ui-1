@@ -45,18 +45,8 @@ export const userSlice = createSlice({
       state.authenticated = true;
       state.user = action.payload.user;
 
-      // Store token in company-scoped storage
-      // Extract company ID from first company in user object
-      const userWithCompany = action.payload.user as any;
-      if (userWithCompany?.company_user?.company?.id) {
-        const companyId = userWithCompany.company_user.company.id;
-        setCompanyIdMapping(0, companyId);
-        setCurrentCompanyIndex(0);
-        setCompanyItem('X-NINJA-TOKEN', action.payload.token, companyId);
-      } else {
-        // Fallback for backward compatibility
-        setCompanyItem('X-NINJA-TOKEN', action.payload.token);
-      }
+      // Note: Token storage is handled by useLogin() hook which stores ALL company tokens
+      // This reducer just updates Redux state
     },
     register: (state, action: PayloadAction<Registered>) => {
       state.authenticated = true;

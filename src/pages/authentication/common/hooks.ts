@@ -18,7 +18,12 @@ import {
 } from '$app/common/stores/slices/company-users';
 import { authenticate } from '$app/common/stores/slices/user';
 import { useDispatch } from 'react-redux';
-import { clearCurrentCompanyIndex } from '$app/common/helpers/company-storage';
+import {
+  clearCurrentCompanyIndex,
+  setCompanyIdMapping,
+  setCompanyItem,
+  setCurrentCompanyIndex,
+} from '$app/common/helpers/company-storage';
 
 export function useLogin() {
   const dispatch = useDispatch();
@@ -29,6 +34,16 @@ export function useLogin() {
     let currentIndex = 0;
 
     const companyUsers: CompanyUser[] = response.data.data;
+
+    // Store ALL company tokens, not just the default one
+    // This ensures that /refresh can work from any tab
+    companyUsers.forEach((companyUser, index) => {
+      if (companyUser.company?.id && companyUser.token?.token) {
+        setCompanyIdMapping(index, companyUser.company.id);
+        setCompanyItem('X-NINJA-TOKEN', companyUser.token.token, companyUser.company.id);
+      }
+    });
+
     const defaultCompanyId = companyUsers[0].account.default_company_id;
 
     currentIndex = companyUsers.findIndex(
@@ -38,6 +53,9 @@ export function useLogin() {
     if (currentIndex === -1) {
       currentIndex = 0;
     }
+
+    // Set the current company index
+    setCurrentCompanyIndex(currentIndex);
 
     dispatch(
       authenticate({
