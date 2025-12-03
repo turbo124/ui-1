@@ -12,6 +12,7 @@ import { endpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
 import { Statics } from '$app/common/interfaces/statics';
 import { useQuery } from 'react-query';
+import { getCompanyItem } from '$app/common/helpers/company-storage';
 
 export function useStaticsQuery() {
   return useQuery<Statics>(
@@ -21,7 +22,7 @@ export function useStaticsQuery() {
         (response) => response.data
       ),
     {
-      enabled: Boolean(localStorage.getItem('X-NINJA-TOKEN')),
+      enabled: Boolean(getCompanyItem('X-NINJA-TOKEN')),
       staleTime: Infinity,
     }
   );

@@ -16,6 +16,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChrome } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
+import {
+  getCompanyItem,
+  setCompanyItem,
+} from '$app/common/helpers/company-storage';
 
 export function ExtensionBanner() {
   const [t] = useTranslation();
@@ -26,12 +30,12 @@ export function ExtensionBanner() {
 
   const [displayChromeExtensionBanner, setDisplayChromeExtensionBanner] =
     useState<string | null>(
-      localStorage.getItem('displayChromeExtensionBanner')
+      getCompanyItem('displayChromeExtensionBanner')
     );
 
   useEffect(() => {
     if (displayChromeExtensionBanner === 'false') {
-      localStorage.setItem('displayChromeExtensionBanner', 'false');
+      setCompanyItem('displayChromeExtensionBanner', 'false');
     }
   }, [displayChromeExtensionBanner]);
 

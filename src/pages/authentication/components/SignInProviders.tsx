@@ -26,6 +26,7 @@ import { toast } from '$app/common/helpers/toast/toast';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { v4 } from 'uuid';
 import AppleSignin from 'react-apple-signin-auth';
+import { clearCurrentCompanyIndex } from '$app/common/helpers/company-storage';
 
 interface SignInProviderButtonProps {
   disabled?: boolean;
@@ -49,7 +50,7 @@ export function SignInProviders() {
   const dispatch = useDispatch();
 
   const login = (response: AxiosResponse) => {
-    localStorage.removeItem('X-CURRENT-INDEX');
+    clearCurrentCompanyIndex();
 
     let currentIndex = 0;
 

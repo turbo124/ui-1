@@ -15,6 +15,7 @@ import { apiEndpoint, isSelfHosted } from '../helpers';
 import { useEffect } from 'react';
 import { useCurrentCompany } from './useCurrentCompany';
 import { useReactSettings } from './useReactSettings';
+import { setCompanyItem } from '../helpers/company-storage';
 
 export const pusherAtom = atom<Pusher | null>(null);
 export const connectionsAtom = atom<Pusher[]>([]);
@@ -61,7 +62,7 @@ export function useSockets() {
     setPusher(client);
 
     client.connection.bind('connected', () => {
-      localStorage.setItem('X-SOCKET-ID', client.connection.socket_id);
+      setCompanyItem('X-SOCKET-ID', client.connection.socket_id);
 
       setConnections((connections) => [...connections, client]);
     });

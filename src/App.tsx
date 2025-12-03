@@ -45,6 +45,10 @@ import { useWebSessionTimeout } from './common/hooks/useWebSessionTimeout';
 import { isPasswordRequiredAtom } from './common/atoms/password-confirmation';
 import { useSystemFonts } from './common/hooks/useSystemFonts';
 import { useReactSettings } from './common/hooks/useReactSettings';
+import {
+  getCompanyItem,
+  setCompanyItem,
+} from './common/helpers/company-storage';
 
 interface RefreshEntityData {
   entity: 'invoices' | 'recurring_invoices';
@@ -189,9 +193,9 @@ export function App() {
     if (
       company &&
       (!companyName || companyName === t('untitled_company')) &&
-      localStorage.getItem('COMPANY-EDIT-OPENED') !== 'true'
+      getCompanyItem('COMPANY-EDIT-OPENED') !== 'true'
     ) {
-      localStorage.setItem('COMPANY-EDIT-OPENED', 'true');
+      setCompanyItem('COMPANY-EDIT-OPENED', 'true');
       setIsCompanyEditModalOpened(true);
     }
   }, [company]);

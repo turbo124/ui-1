@@ -12,6 +12,7 @@ import { useSockets } from '../hooks/useSockets';
 import { useEffect } from 'react';
 import { useCurrentCompany } from '../hooks/useCurrentCompany';
 import { isHosted } from '../helpers';
+import { getCompanyItem } from '../helpers/company-storage';
 
 // This file defines global events system for query invalidation.
 
@@ -132,8 +133,9 @@ export function useSocketEvent<T>({ on, callback }: SocketEventProps<T>) {
 }
 
 export function socketId() {
-  if (localStorage.getItem('X-SOCKET-ID')) {
-    return parseFloat(localStorage.getItem('X-SOCKET-ID') as string);
+  const socketId = getCompanyItem('X-SOCKET-ID');
+  if (socketId) {
+    return parseFloat(socketId);
   }
 
   return null;

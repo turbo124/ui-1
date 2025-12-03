@@ -27,6 +27,11 @@ import { useDispatch } from 'react-redux';
 import { useColorScheme } from '$app/common/colors';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
+import {
+  setCurrentCompanyIndex,
+  setCompanyItem,
+  setCompanyIdMapping,
+} from '$app/common/helpers/company-storage';
 
 interface Props {
   isModalOpen: boolean;
@@ -59,7 +64,7 @@ export function CompanyCreate(props: Props) {
       })
     );
 
-    localStorage.setItem('X-CURRENT-INDEX', index.toString());
+    setCurrentCompanyIndex(index);
 
     queryClient.invalidateQueries();
 
@@ -105,15 +110,21 @@ export function CompanyCreate(props: Props) {
 
               props.setIsModalOpen(false);
 
+              // Store company ID mapping for the new company
+              if (companyUser.company?.id) {
+                setCompanyIdMapping(
+                  createdCompanyIndex,
+                  companyUser.company.id
+                );
+              }
+
               switchCompany(
                 createdCompanyIndex,
                 companyUser.user,
                 companyUser.token.token
               );
             })
-            .finally(() =>
-              localStorage.setItem('COMPANY-EDIT-OPENED', 'false')
-            );
+            .finally(() => setCompanyItem('COMPANY-EDIT-OPENED', 'false'));
         })
         .finally(() => setIsFormBusy(false));
     }

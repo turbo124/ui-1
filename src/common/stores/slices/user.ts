@@ -11,6 +11,7 @@
 import { set } from 'lodash';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Authenticated, Registered } from '../../dtos/authentication';
+import { setCompanyItem, setCompanyIdMapping, setCurrentCompanyIndex } from '../../helpers/company-storage';
 
 interface UserState {
   authenticated: boolean;
@@ -44,13 +45,34 @@ export const userSlice = createSlice({
       state.authenticated = true;
       state.user = action.payload.user;
 
-      localStorage.setItem('X-NINJA-TOKEN', action.payload.token);
+      // Store token in company-scoped storage
+      // Extract company ID from first company in user object
+      const userWithCompany = action.payload.user as any;
+      if (userWithCompany?.company_user?.company?.id) {
+        const companyId = userWithCompany.company_user.company.id;
+        setCompanyIdMapping(0, companyId);
+        setCurrentCompanyIndex(0);
+        setCompanyItem('X-NINJA-TOKEN', action.payload.token, companyId);
+      } else {
+        // Fallback for backward compatibility
+        setCompanyItem('X-NINJA-TOKEN', action.payload.token);
+      }
     },
     register: (state, action: PayloadAction<Registered>) => {
       state.authenticated = true;
       state.user = action.payload.user;
 
-      localStorage.setItem('X-NINJA-TOKEN', action.payload.token);
+      // Store token in company-scoped storage
+      const userWithCompany = action.payload.user as any;
+      if (userWithCompany?.company_user?.company?.id) {
+        const companyId = userWithCompany.company_user.company.id;
+        setCompanyIdMapping(0, companyId);
+        setCurrentCompanyIndex(0);
+        setCompanyItem('X-NINJA-TOKEN', action.payload.token, companyId);
+      } else {
+        // Fallback for backward compatibility
+        setCompanyItem('X-NINJA-TOKEN', action.payload.token);
+      }
     },
     updateChanges: (
       state,

@@ -18,12 +18,13 @@ import {
 } from '$app/common/stores/slices/company-users';
 import { authenticate } from '$app/common/stores/slices/user';
 import { useDispatch } from 'react-redux';
+import { clearCurrentCompanyIndex } from '$app/common/helpers/company-storage';
 
 export function useLogin() {
   const dispatch = useDispatch();
 
   return (response: AxiosResponse) => {
-    localStorage.removeItem('X-CURRENT-INDEX');
+    clearCurrentCompanyIndex();
 
     let currentIndex = 0;
 

@@ -23,10 +23,11 @@ import { endpoint } from '../helpers';
 import { authenticate } from '../stores/slices/user';
 import { RootState } from '../stores/store';
 import dayjs from 'dayjs';
+import { getCompanyItem, setCompanyIdMapping, setCurrentCompanyIndex, removeCompanyItem } from '../helpers/company-storage';
 
 export function useAuthenticated(): boolean {
   const user = useSelector((state: RootState) => state.user);
-  const token = localStorage.getItem('X-NINJA-TOKEN');
+  const token = getCompanyItem('X-NINJA-TOKEN');
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -50,10 +51,9 @@ export function useAuthenticated(): boolean {
       .then((response) => {
         let currentIndex = 0;
 
-        if (localStorage.getItem('X-CURRENT-INDEX')) {
-          currentIndex = parseInt(
-            localStorage.getItem('X-CURRENT-INDEX') || '0'
-          );
+        const storedIndex = getCompanyItem('X-CURRENT-INDEX');
+        if (storedIndex) {
+          currentIndex = parseInt(storedIndex || '0');
         } else {
           const companyUsers: CompanyUser[] = response.data.data;
           const defaultCompanyId = companyUsers[0].account.default_company_id;
@@ -64,15 +64,25 @@ export function useAuthenticated(): boolean {
             ) || 0;
         }
 
+        // Store company ID mapping for all companies
+        const companyUsers: CompanyUser[] = response.data.data;
+        companyUsers.forEach((companyUser, index) => {
+          if (companyUser.company?.id) {
+            setCompanyIdMapping(index, companyUser.company.id);
+          }
+        });
+
         if (currentIndex === -1) {
           currentIndex = 0;
         }
+
+        setCurrentCompanyIndex(currentIndex);
 
         dispatch(
           authenticate({
             type: AuthenticationTypes.TOKEN,
             user: response.data.data[currentIndex].user,
-            token: localStorage.getItem('X-NINJA-TOKEN') as string,
+            token: getCompanyItem('X-NINJA-TOKEN') as string,
           })
         );
 
@@ -83,7 +93,7 @@ export function useAuthenticated(): boolean {
       .catch((e) => {
         console.error(e);
 
-        localStorage.removeItem('X-NINJA-TOKEN');
+        removeCompanyItem('X-NINJA-TOKEN');
 
         navigate('/login');
       })

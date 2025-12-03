@@ -35,6 +35,7 @@ import { useCurrentUser } from '$app/common/hooks/useCurrentUser';
 import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { useColorScheme } from '$app/common/colors';
 import companySettings from '$app/common/constants/company-settings';
+import { setCompanyIdMapping, setCurrentCompanyIndex, setCompanyItem } from '$app/common/helpers/company-storage';
 
 const SwitcherDiv = styled.div`
   &:hover {
@@ -84,9 +85,14 @@ export function CompanySwitcher() {
       })
     );
 
-    localStorage.setItem('X-CURRENT-INDEX', index.toString());
-
-    localStorage.setItem('COMPANY-EDIT-OPENED', 'false');
+    // Update company ID mapping and current index
+    if (state.api[index]?.company?.id) {
+      setCompanyIdMapping(index, state.api[index].company.id);
+    }
+    setCurrentCompanyIndex(index);
+    
+    // Store COMPANY-EDIT-OPENED in company-scoped storage
+    setCompanyItem('COMPANY-EDIT-OPENED', 'false');
 
     sessionStorage.setItem('COMPANY-ACTIVITY-SHOWN', 'false');
 

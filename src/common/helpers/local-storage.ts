@@ -8,17 +8,10 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
+import { clearAllCompanyStorage } from './company-storage';
+
 export function clearLocalStorage() {
-  const displayChromeExtensionBanner = localStorage.getItem(
-    'displayChromeExtensionBanner'
-  );
-
-  localStorage.clear();
-
-  if (displayChromeExtensionBanner) {
-    localStorage.setItem(
-      'displayChromeExtensionBanner',
-      displayChromeExtensionBanner
-    );
-  }
+  // Clear all company-scoped storage
+  // Each company is isolated - logout clears ALL company contexts
+  clearAllCompanyStorage();
 }
