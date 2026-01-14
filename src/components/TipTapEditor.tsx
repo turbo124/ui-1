@@ -1542,7 +1542,7 @@ export function TipTapEditor({
       </EditorWrapper>
 
       <Modal
-        title={t('insert_link')}
+        title={t('url')}
         visible={linkModal}
         onClose={() => setLinkModal(false)}
       >
