@@ -203,7 +203,6 @@ export function useTriggerEInvoiceRoutes() {
   return (
     isSelfHosted() &&
     Boolean(company) &&
-    company?.settings.enable_e_invoice &&
     company?.settings.e_invoice_type === 'PEPPOL'
   );
 }
