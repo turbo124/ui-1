@@ -23,6 +23,7 @@ import { ArrowsOppositeDirection } from '$app/components/icons/ArrowsOppositeDir
 import { BookOpen } from '$app/components/icons/BookOpen';
 import { ConnectedDots } from '$app/components/icons/ConnectedDots';
 import { ChartLine } from '$app/components/icons/ChartLine';
+import { QbOauth } from '$app/pages/settings/integrations/quickbooks/QbOauth';
 
 const Box = styled.div`
   background-color: ${({ theme }) => theme.backgroundColor};
@@ -170,6 +171,33 @@ export function Integrations() {
 
         <div>
           <ArrowRight color={colors.$3} size="1.4rem" strokeWidth="1.5" />
+        </div>
+      </Box>
+
+      <div className="py-4">
+        <Divider
+          className="border-dashed"
+          withoutPadding
+          style={{ borderColor: colors.$20 }}
+        />
+      </div>
+
+      <Box
+        className="flex justify-between items-center p-4 border shadow-sm w-full rounded-md"
+        theme={{
+          backgroundColor: colors.$1,
+          hoverBackgroundColor: colors.$4,
+        }}
+        style={{ borderColor: colors.$24 }}
+      >
+        <div className="flex items-center space-x-2">
+          <span className="text-sm" style={{ color: colors.$3 }}>
+            QuickBooks
+          </span>
+        </div>
+
+        <div>
+          <QbOauth />
         </div>
       </Box>
     </div>
