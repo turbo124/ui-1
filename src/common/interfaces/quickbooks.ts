@@ -29,9 +29,12 @@ export interface QuickbooksSettings {
     product: QuickbooksSync;
     payment: QuickbooksSync;
     expense: QuickbooksSync;
-    default_income_account: string;
-    default_expense_account: string;
+    expense_category: QuickbooksSync;
+    income_account_map: IncomeAccountMap;
+    default_income_account?: string;
 }
+
+export type IncomeAccountMap = [string, string][];
 
 export enum QuickbooksSyncDirection {
     None = 'none',
