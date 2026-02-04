@@ -23,9 +23,12 @@ import { useAccountManagementTabs } from './common/hooks/useAccountManagementTab
 import { Card } from '$app/components/cards';
 import { useColorScheme } from '$app/common/colors';
 import { useAtomValue } from 'jotai';
+import { useLocation } from 'react-router-dom';
+import { Quickbooks } from './component/Quickbooks';
 
 export function AccountManagement() {
   const [t] = useTranslation();
+  const location = useLocation();
 
   const colors = useColorScheme();
 
@@ -73,6 +76,12 @@ export function AccountManagement() {
           <Outlet />
         </div>
       </Card>
+
+      {location.pathname.includes('/integrations') && (
+        <div className="mt-4">
+          <Quickbooks />
+        </div>
+      )}
     </Settings>
   );
 }
