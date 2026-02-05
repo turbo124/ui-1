@@ -11,7 +11,6 @@
 import { Card, Element } from '$app/components/cards';
 import { Button } from '$app/components/forms';
 import { SelectField } from '$app/components/forms/SelectField';
-import { InputField } from '$app/components/forms/InputField';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import { useCurrentCompany } from '$app/common/hooks/useCurrentCompany';
