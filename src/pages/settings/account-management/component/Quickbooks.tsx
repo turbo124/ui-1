@@ -326,10 +326,10 @@ export function Quickbooks() {
 
             <div className="border-t pt-4" style={{ borderColor: colors.$20 }}>
               <h3 className="text-sm font-medium mb-4" style={{ color: colors.$3 }}>
-                {t('read_only_settings')}
+                Read Only Quickbooks Settings
               </h3>
 
-              <Element leftSide={t('automatic_taxes')}>
+              <Element leftSide="Automatic Sales Tax Enabled">
                 <div className="text-sm" style={{ color: colors.$3 }}>
                   {quickbooksSettings.automatic_taxes ? t('yes') : t('no')}
                 </div>
@@ -337,7 +337,7 @@ export function Quickbooks() {
 
               {quickbooksSettings.income_account_map &&
                 quickbooksSettings.income_account_map.length > 0 && (
-                  <Element leftSide={t('income_account_map')}>
+                  <Element leftSide="Income Accounts">
                     <div
                       className="grid grid-cols-2 gap-2 text-sm"
                       style={{ color: colors.$3 }}
@@ -358,7 +358,7 @@ export function Quickbooks() {
 
               {quickbooksSettings.tax_rate_map &&
                 quickbooksSettings.tax_rate_map.length > 0 && (
-                  <Element leftSide={t('tax_rate_map')}>
+                  <Element leftSide={t('taxes')}>
                     <div className="space-y-2">
                       {quickbooksSettings.tax_rate_map.map((entry, index) => (
                         <div
