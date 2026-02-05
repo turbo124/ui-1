@@ -50,6 +50,8 @@ export interface QuickbooksSync {
 export interface IncomeAccountMapEntry {
     id: string;
     name: string;
+    fully_qualified_name?: string;
+    parent_ref?: string;
 }
 
 export interface TaxRateMapEntry {
