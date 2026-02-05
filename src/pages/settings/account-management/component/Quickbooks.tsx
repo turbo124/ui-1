@@ -133,9 +133,14 @@ export function Quickbooks() {
           <>
             <div className="border-t pt-4" style={{ borderColor: colors.$20 }}>
               <h3 className="text-sm font-medium mb-4" style={{ color: colors.$3 }}>
-                {t('sync_settings')}
+                Sync Settings
               </h3>
 
+              <p>
+              These settings determine which records are synced between Invoice Ninja and Quickbooks.
+              </p>
+              
+              <p> ** Note, selecting Invoice for sync will  automatically also "copy" the client record to Quickbooks (if it doesn't already exist). </p>
             <Element leftSide={t('client')}>
               <SelectField
                 value={quickbooksSettings.client?.direction ?? QuickbooksSyncDirection.None}
