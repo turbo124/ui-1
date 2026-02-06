@@ -154,7 +154,7 @@ export function Quickbooks() {
     >
       {isConnected ? (
         <TabGroup
-          tabs={[t('connect'), t('import'), t('sync_settings')]}
+          tabs={[t('connect'), t('import'), "Sync"]}
           withHorizontalPadding
           fullRightPadding
           horizontalPaddingWidth="1.5rem"
@@ -170,7 +170,11 @@ export function Quickbooks() {
                   behavior="button"
                   onClick={() => setIsDisconnectModalVisible(true)}
                   disabled={isFormBusy}
-                  className="!bg-red-600 !border-red-600 !text-white hover:!bg-red-700 hover:!border-red-700"
+                  className="border-red-500 text-red-500 ml-auto"
+                  style={{
+                    borderColor: "red",
+                    color: "red",
+                  }}
                 >
                   {t('disconnect')}
                 </Button>
@@ -185,7 +189,7 @@ export function Quickbooks() {
             )}
             {quickbooksSettings && (
               <>
-                <Element leftSide={t('qb_income_account_id')}>
+                <Element leftSide="Default Income Account">
                   <SelectField
                     value={quickbooksSettings.qb_income_account_id || ''}
                     onValueChange={handleIncomeAccountIdChange}
@@ -201,7 +205,9 @@ export function Quickbooks() {
                       ))}
                   </SelectField>
                 </Element>
-                <Element leftSide={t('automatic_taxes')}>
+                <Element leftSide="Automatic Taxes (AST) in QB"
+                leftSideHelp="Flag to indicate if automatic taxes are configured in QuickBooks. This is important as Invoices first need to be synced to QB!"
+                >
                   <div className="text-sm" style={{ color: colors.$3 }}>
                     {quickbooksSettings.automatic_taxes ? t('yes') : t('no')}
                   </div>
@@ -250,9 +256,25 @@ export function Quickbooks() {
           <div className="space-y-4 px-4 sm:px-6 py-4">
             {quickbooksSettings && (
               <>
-                <p className="text-sm" style={{ color: colors.$3 }}>
-                  {t('sync_settings_quickbooks_help')}
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm" style={{ color: colors.$3 }}>
+                    These settings control the direction of data sync between QuickBooks and Invoice Ninja.
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-sm" style={{ color: colors.$3 }}>
+                    <li>
+                      <strong>None:</strong> No data will be synced.
+                    </li>
+                    <li>
+                      <strong>Push:</strong> Only data from Invoice Ninja will be synced to QuickBooks.
+                    </li>
+                    <li>
+                      <strong>Pull:</strong> Only data from QuickBooks will be synced to Invoice Ninja.
+                    </li>
+                    <li>
+                      <strong>Bidirectional:</strong> Data will be synced in both directions. <strong>Caution:</strong> This may have unintended consequences!!!
+                    </li>
+                  </ul>
+                </div>
             <Element leftSide={t('client')}>
               <SelectField
                 value={quickbooksSettings.client?.direction ?? QuickbooksSyncDirection.None}
@@ -306,12 +328,12 @@ export function Quickbooks() {
 
             <div className="border-t pt-4 mt-4" style={{ borderColor: colors.$20 }}>
               <h3 className="text-sm font-medium mb-4" style={{ color: colors.$3 }}>
-                {t('read_only_settings')}
+                QuickBooks Read Only Data
               </h3>
 
               {quickbooksSettings.income_account_map &&
                 quickbooksSettings.income_account_map.length > 0 && (
-                  <Element leftSide={t('income_account_map')}>
+                  <Element leftSide="Income Accounts">
                     <div
                       className="grid grid-cols-2 gap-2 text-sm"
                       style={{ color: colors.$3 }}
@@ -341,14 +363,9 @@ export function Quickbooks() {
                           style={{ backgroundColor: colors.$4, color: colors.$3 }}
                         >
                           <div>
-                            <strong>{t('id')}:</strong> {entry.id}
+                            {entry.name} <strong>{entry.rate}%</strong>
                           </div>
-                          <div>
-                            <strong>{t('name')}:</strong> {entry.name}
-                          </div>
-                          <div>
-                            <strong>{t('rate')}:</strong> {entry.rate}%
-                          </div>
+                          
                         </div>
                       ))}
                     </div>
