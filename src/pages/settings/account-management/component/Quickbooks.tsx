@@ -62,10 +62,24 @@ export function Quickbooks() {
   ];
 
   const handleConnect = () => {
-    // TODO: Implement QuickBooks OAuth connection flow
+    if (isFormBusy) return;
+
     toast.processing();
-    // This would typically redirect to QuickBooks OAuth
-    // window.location.href = endpoint('/api/v1/quickbooks/connect');
+    setIsFormBusy(true);
+
+    request('POST', endpoint('/api/v1/one_time_token'), {
+      context: 'quickbooks',
+    })
+      .then((response) => {
+        const token = response.data.hash;
+        window.location.href = endpoint('/quickbooks/authorize/:token', {
+          token,
+        });
+      })
+      .catch(() => {
+        toast.error();
+        setIsFormBusy(false);
+      });
   };
 
   const handleDisconnect = () => {
