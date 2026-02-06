@@ -166,15 +166,11 @@ export function Quickbooks() {
                   {t('connected')}
                 </span>
                 <Button
-                  type="secondary"
+                  type="primary"
                   behavior="button"
                   onClick={() => setIsDisconnectModalVisible(true)}
                   disabled={isFormBusy}
-                  className="border-red-500 text-red-500 ml-auto"
-                  style={{
-                    borderColor: "red",
-                    color: "red",
-                  }}
+                  className="bg-red-500 border-red-500 text-white ml-auto"
                 >
                   {t('disconnect')}
                 </Button>
@@ -431,14 +427,14 @@ export function Quickbooks() {
             {t('cancel')}
           </Button>
           <Button
-            type="secondary"
+            type="primary"
             behavior="button"
             onClick={() => {
               setIsDisconnectModalVisible(false);
               handleDisconnect();
             }}
             disabled={isFormBusy}
-            className="!bg-red-600 !border-red-600 !text-white hover:!bg-red-700 hover:!border-red-700"
+            className="bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
           >
             {t('disconnect')}
           </Button>
