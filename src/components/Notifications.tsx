@@ -283,7 +283,6 @@ export function Notifications() {
       'App\\Events\\Payment\\PaymentWasUpdated',
     ],
     callback: ({ event, data }) => {
-      console.log(event, data);
 
       if (event === 'App\\Events\\Invoice\\InvoiceWasPaid') {
         const $invoice = data as Invoice;
