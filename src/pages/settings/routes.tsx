@@ -250,6 +250,18 @@ export const settingsRoutes = (
           <Route path="create" element={<Settings.CreateApiWebhook />} />
           <Route path=":id/edit" element={<Settings.EditApiWebhook />} />
         </Route>
+        <Route path="docuninja_webhooks">
+          <Route path="" element={<Settings.DocuNinjaWebhooks />} />
+          <Route
+            path="create"
+            element={<Settings.CreateDocuNinjaWebhook />}
+          />
+          <Route path=":id" element={<Settings.ShowDocuNinjaWebhook />} />
+          <Route
+            path=":id/edit"
+            element={<Settings.EditDocuNinjaWebhook />}
+          />
+        </Route>
         <Route path="analytics" element={<Settings.Analytics />} />
       </Route>
       <Route path="gateways">

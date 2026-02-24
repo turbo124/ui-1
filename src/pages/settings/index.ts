@@ -40,6 +40,7 @@ export * from './company';
 export * from './task-statuses';
 export * from './integrations/api-tokens';
 export * from './integrations/api-webhooks';
+export * from './integrations/docuninja-webhooks';
 export * from './integrations/analytics';
 export * from './expense-categories';
 export * from './gateways';
