@@ -16,6 +16,7 @@ import { docuNinjaEndpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
 import { useTitle } from '$app/common/hooks/useTitle';
+import { WebhookHeader } from '$app/common/interfaces/docuninja/webhook';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import {
   useDocuNinjaWebhookQuery,
@@ -23,13 +24,20 @@ import {
 } from '$app/common/queries/docuninja/webhooks';
 import { Settings } from '$app/components/layouts/Settings';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useColorScheme } from '$app/common/colors';
 import { EventSelector } from './common/components/EventSelector';
 import { IncludesSelector } from './common/components/IncludesSelector';
+import {
+  WebhookHeadersEditor,
+  HeaderError,
+  validateHeaders,
+} from './common/components/WebhookHeadersEditor';
 import { Spinner } from '$app/components/Spinner';
 
 export function Edit() {
+  const [t] = useTranslation();
   const { id } = useParams();
   const colors = useColorScheme();
   const navigate = useNavigate();
@@ -44,19 +52,21 @@ export function Edit() {
   const [includes, setIncludes] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [headers, setHeaders] = useState<WebhookHeader[]>([]);
   const [errors, setErrors] = useState<ValidationBag>();
+  const [headerErrors, setHeaderErrors] = useState<HeaderError[]>([]);
   const [isFormBusy, setIsFormBusy] = useState(false);
 
   const pages = [
-    { name: 'Settings', href: '/settings' },
-    { name: 'Account Management', href: '/settings/account_management' },
+    { name: t('docuninja'), href: '/docuninja' },
+    { name: t('settings'), href: '/docuninja/settings' },
     {
-      name: 'Webhooks',
-      href: '/settings/integrations/docuninja_webhooks',
+      name: t('webhooks'),
+      href: '/docuninja/settings/webhooks',
     },
     {
       name: 'Edit Endpoint',
-      href: `/settings/integrations/docuninja_webhooks/${id}/edit`,
+      href: `/docuninja/settings/webhooks/${id}/edit`,
     },
   ];
 
@@ -67,6 +77,7 @@ export function Edit() {
       setIncludes(webhook.includes ?? []);
       setDescription(webhook.description ?? '');
       setIsActive(webhook.is_active);
+      setHeaders(webhook.headers ?? []);
     }
   }, [webhook]);
 
@@ -89,9 +100,18 @@ export function Edit() {
       return;
     }
 
+    if (headers.length > 0) {
+      const headerValidation = validateHeaders(headers);
+      if (!headerValidation.valid) {
+        setHeaderErrors(headerValidation.errors);
+        return;
+      }
+    }
+
     toast.processing();
     setIsFormBusy(true);
     setErrors(undefined);
+    setHeaderErrors([]);
 
     const payload: Record<string, unknown> = {
       url,
@@ -99,6 +119,7 @@ export function Edit() {
       description: description || undefined,
       is_active: isActive,
       includes: includes.length > 0 ? includes : null,
+      headers: headers.length > 0 ? headers : null,
     };
 
     request(
@@ -114,12 +135,26 @@ export function Edit() {
       .then(() => {
         toast.success('updated_webhook');
         invalidate();
-        navigate('/settings/integrations/docuninja_webhooks');
+        navigate('/docuninja/settings/webhooks');
       })
       .catch((error: AxiosError<ValidationBag>) => {
         if (error.response?.status === 422) {
           toast.dismiss();
           setErrors(error.response.data);
+
+          const serverErrors = error.response.data.errors;
+          if (serverErrors) {
+            const mapped: HeaderError[] = [];
+            for (let i = 0; i < headers.length; i++) {
+              mapped.push({
+                name: serverErrors[`headers.${i}.name`]?.[0],
+                value: serverErrors[`headers.${i}.value`]?.[0],
+              });
+            }
+            if (mapped.some((e) => e.name || e.value)) {
+              setHeaderErrors(mapped);
+            }
+          }
         }
       })
       .finally(() => setIsFormBusy(false));
@@ -209,6 +244,21 @@ export function Edit() {
           <IncludesSelector
             selectedIncludes={includes}
             onChange={setIncludes}
+          />
+        </Element>
+
+        <Element
+          leftSide="Custom Headers"
+          leftSideHelp="Optional. Custom HTTP headers sent with each delivery. Values are encrypted at rest."
+          withoutItemsCenter
+        >
+          <WebhookHeadersEditor
+            headers={headers}
+            onChange={(h) => {
+              setHeaders(h);
+              setHeaderErrors([]);
+            }}
+            errors={headerErrors}
           />
         </Element>
 

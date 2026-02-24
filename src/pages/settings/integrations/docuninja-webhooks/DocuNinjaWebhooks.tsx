@@ -12,14 +12,12 @@ import { useColorScheme } from '$app/common/colors';
 import { docuNinjaEndpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
-import { useTitle } from '$app/common/hooks/useTitle';
 import { DocuNinjaWebhook } from '$app/common/interfaces/docuninja/webhook';
 import {
   useDocuNinjaWebhooksQuery,
   useInvalidateDocuNinjaWebhooks,
 } from '$app/common/queries/docuninja/webhooks';
 import { Badge } from '$app/components/Badge';
-import { Settings } from '$app/components/layouts/Settings';
 import { Spinner } from '$app/components/Spinner';
 import { Button } from '$app/components/forms';
 import { Card } from '$app/components/cards';
@@ -34,8 +32,6 @@ import { WebhookStatusBadge } from './common/components/WebhookStatusBadge';
 dayjs.extend(relativeTime);
 
 export function DocuNinjaWebhooks() {
-  useTitle('webhooks');
-
   const colors = useColorScheme();
   const navigate = useNavigate();
   const invalidate = useInvalidateDocuNinjaWebhooks();
@@ -46,15 +42,6 @@ export function DocuNinjaWebhooks() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { data, isLoading } = useDocuNinjaWebhooksQuery();
-
-  const pages = [
-    { name: 'Settings', href: '/settings' },
-    { name: 'Account Management', href: '/settings/account_management' },
-    {
-      name: 'Webhooks',
-      href: '/settings/integrations/docuninja_webhooks',
-    },
-  ];
 
   const handleTest = (webhook: DocuNinjaWebhook) => {
     toast.processing();
@@ -107,19 +94,14 @@ export function DocuNinjaWebhooks() {
   const webhooks = data?.data ?? [];
 
   return (
-    <Settings
-      title="Webhooks"
-      breadcrumbs={pages}
-      navigationTopRight={
+    <div className="space-y-4">
+      <div className="flex justify-end">
         <Button
-          onClick={() =>
-            navigate('/settings/integrations/docuninja_webhooks/create')
-          }
+          onClick={() => navigate('/docuninja/settings/webhooks/create')}
         >
           Add Endpoint
         </Button>
-      }
-    >
+      </div>
       {isLoading && (
         <Card>
           <div className="flex justify-center py-8">
@@ -139,7 +121,7 @@ export function DocuNinjaWebhooks() {
             </p>
             <Button
               onClick={() =>
-                navigate('/settings/integrations/docuninja_webhooks/create')
+                navigate('/docuninja/settings/webhooks/create')
               }
             >
               Create your first endpoint
@@ -160,7 +142,7 @@ export function DocuNinjaWebhooks() {
               }}
               onClick={() =>
                 navigate(
-                  `/settings/integrations/docuninja_webhooks/${webhook.id}`
+                  `/docuninja/settings/webhooks/${webhook.id}`
                 )
               }
             >
@@ -222,7 +204,7 @@ export function DocuNinjaWebhooks() {
                     }}
                     onClick={() =>
                       navigate(
-                        `/settings/integrations/docuninja_webhooks/${webhook.id}/edit`
+                        `/docuninja/settings/webhooks/${webhook.id}/edit`
                       )
                     }
                   >
@@ -283,6 +265,6 @@ export function DocuNinjaWebhooks() {
           </Button>
         </div>
       </Modal>
-    </Settings>
+    </div>
   );
 }

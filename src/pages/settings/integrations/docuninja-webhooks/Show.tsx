@@ -35,7 +35,9 @@ import {
 import { Pagination } from '$app/components/tables/Pagination';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EventBadges } from './common/components/EventBadges';
 import { WebhookStatusBadge } from './common/components/WebhookStatusBadge';
@@ -74,6 +76,7 @@ function HttpStatusBadge(props: { status: number | null }) {
 }
 
 export function Show() {
+  const [t] = useTranslation();
   const { id } = useParams();
   const colors = useColorScheme();
   const navigate = useNavigate();
@@ -84,6 +87,21 @@ export function Show() {
   const [deliveryPage, setDeliveryPage] = useState(1);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [revealedHeaders, setRevealedHeaders] = useState<Set<number>>(
+    new Set()
+  );
+
+  const toggleHeaderReveal = (index: number) => {
+    setRevealedHeaders((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
   const { data: webhook, isLoading: webhookLoading } =
     useDocuNinjaWebhookQuery({ id });
@@ -95,15 +113,15 @@ export function Show() {
     });
 
   const pages = [
-    { name: 'Settings', href: '/settings' },
-    { name: 'Account Management', href: '/settings/account_management' },
+    { name: t('docuninja'), href: '/docuninja' },
+    { name: t('settings'), href: '/docuninja/settings' },
     {
-      name: 'Webhooks',
-      href: '/settings/integrations/docuninja_webhooks',
+      name: t('webhooks'),
+      href: '/docuninja/settings/webhooks',
     },
     {
       name: 'Details',
-      href: `/settings/integrations/docuninja_webhooks/${id}`,
+      href: `/docuninja/settings/webhooks/${id}`,
     },
   ];
 
@@ -149,7 +167,7 @@ export function Show() {
       .then(() => {
         toast.success('deleted_webhook');
         invalidate();
-        navigate('/settings/integrations/docuninja_webhooks');
+        navigate('/docuninja/settings/webhooks');
       })
       .catch(() => {
         toast.error();
@@ -213,7 +231,7 @@ export function Show() {
               type="secondary"
               onClick={() =>
                 navigate(
-                  `/settings/integrations/docuninja_webhooks/${id}/edit`
+                  `/docuninja/settings/webhooks/${id}/edit`
                 )
               }
             >
@@ -263,6 +281,50 @@ export function Show() {
             </span>
           )}
         </Element>
+
+        {webhook.headers && webhook.headers.length > 0 && (
+          <Element leftSide="Custom Headers" withoutItemsCenter>
+            <div className="flex flex-col space-y-2">
+              {webhook.headers.map((header, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-2 p-2 rounded-md border"
+                  style={{
+                    borderColor: colors.$5,
+                    backgroundColor: colors.$4,
+                  }}
+                >
+                  <Badge variant="generic">{header.name}</Badge>
+                  <span
+                    className="text-sm font-mono flex-1 break-all"
+                    style={{ color: colors.$3 }}
+                  >
+                    {revealedHeaders.has(index)
+                      ? header.value
+                      : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+                  </span>
+                  <button
+                    type="button"
+                    className="p-1 shrink-0 cursor-pointer"
+                    onClick={() => toggleHeaderReveal(index)}
+                    aria-label={
+                      revealedHeaders.has(index) ? 'Hide value' : 'Reveal value'
+                    }
+                  >
+                    {revealedHeaders.has(index) ? (
+                      <AiFillEyeInvisible
+                        className="text-gray-400"
+                        fontSize={17}
+                      />
+                    ) : (
+                      <AiFillEye className="text-gray-400" fontSize={17} />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </Element>
+        )}
 
         {webhook.description && (
           <Element leftSide="Description">

@@ -191,14 +191,6 @@ export function useSettingsRoutes() {
       enabled: ((isAdmin || isOwner) && isCompanySettingsActive) || false,
     },
     {
-      name: 'Webhooks',
-      href: '/settings/integrations/docuninja_webhooks',
-      current: location.pathname.startsWith(
-        '/settings/integrations/docuninja_webhooks'
-      ),
-      enabled: ((isAdmin || isOwner) && isCompanySettingsActive) || false,
-    },
-    {
       name: t('system_logs'),
       href: '/settings/system_logs',
       current: location.pathname.startsWith('/settings/system_logs'),

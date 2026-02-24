@@ -8,6 +8,11 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
+export interface WebhookHeader {
+  name: string;
+  value: string;
+}
+
 export interface DocuNinjaWebhook {
   id: string;
   url: string;
@@ -21,6 +26,7 @@ export interface DocuNinjaWebhook {
   created_at: string;
   updated_at: string;
   secret?: string;
+  headers?: WebhookHeader[] | null;
 }
 
 export interface DocuNinjaWebhookDelivery {

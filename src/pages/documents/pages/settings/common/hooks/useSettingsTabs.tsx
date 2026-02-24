@@ -35,6 +35,12 @@ export function useSettingsTabs() {
       current: location.pathname === '/docuninja/settings/notifications',
       enabled: true,
     },
+    {
+      name: t('webhooks'),
+      href: '/docuninja/settings/webhooks',
+      current: location.pathname === '/docuninja/settings/webhooks',
+      enabled: true,
+    },
   ];
 
   return routes;

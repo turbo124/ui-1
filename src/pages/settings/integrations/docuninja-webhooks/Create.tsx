@@ -15,18 +15,28 @@ import { docuNinjaEndpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
 import { useTitle } from '$app/common/hooks/useTitle';
-import { DocuNinjaWebhook } from '$app/common/interfaces/docuninja/webhook';
+import {
+  DocuNinjaWebhook,
+  WebhookHeader,
+} from '$app/common/interfaces/docuninja/webhook';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { useInvalidateDocuNinjaWebhooks } from '$app/common/queries/docuninja/webhooks';
 import { Settings } from '$app/components/layouts/Settings';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useColorScheme } from '$app/common/colors';
 import { EventSelector } from './common/components/EventSelector';
 import { IncludesSelector } from './common/components/IncludesSelector';
 import { SecretRevealModal } from './common/components/SecretRevealModal';
+import {
+  WebhookHeadersEditor,
+  HeaderError,
+  validateHeaders,
+} from './common/components/WebhookHeadersEditor';
 
 export function Create() {
+  const [t] = useTranslation();
   const { documentTitle } = useTitle('new_webhook');
 
   const colors = useColorScheme();
@@ -37,7 +47,9 @@ export function Create() {
   const [events, setEvents] = useState<string[]>([]);
   const [includes, setIncludes] = useState<string[]>([]);
   const [description, setDescription] = useState('');
+  const [headers, setHeaders] = useState<WebhookHeader[]>([]);
   const [errors, setErrors] = useState<ValidationBag>();
+  const [headerErrors, setHeaderErrors] = useState<HeaderError[]>([]);
   const [isFormBusy, setIsFormBusy] = useState(false);
 
   const [secretModalVisible, setSecretModalVisible] = useState(false);
@@ -45,15 +57,15 @@ export function Create() {
   const [createdUrl, setCreatedUrl] = useState('');
 
   const pages = [
-    { name: 'Settings', href: '/settings' },
-    { name: 'Account Management', href: '/settings/account_management' },
+    { name: t('docuninja'), href: '/docuninja' },
+    { name: t('settings'), href: '/docuninja/settings' },
     {
-      name: 'Webhooks',
-      href: '/settings/integrations/docuninja_webhooks',
+      name: t('webhooks'),
+      href: '/docuninja/settings/webhooks',
     },
     {
       name: 'New Endpoint',
-      href: '/settings/integrations/docuninja_webhooks/create',
+      href: '/docuninja/settings/webhooks/create',
     },
   ];
 
@@ -76,9 +88,18 @@ export function Create() {
       return;
     }
 
+    if (headers.length > 0) {
+      const headerValidation = validateHeaders(headers);
+      if (!headerValidation.valid) {
+        setHeaderErrors(headerValidation.errors);
+        return;
+      }
+    }
+
     toast.processing();
     setIsFormBusy(true);
     setErrors(undefined);
+    setHeaderErrors([]);
 
     const payload: Record<string, unknown> = {
       url,
@@ -88,6 +109,10 @@ export function Create() {
 
     if (includes.length > 0) {
       payload.includes = includes;
+    }
+
+    if (headers.length > 0) {
+      payload.headers = headers;
     }
 
     request('POST', docuNinjaEndpoint('/api/webhooks'), payload, {
@@ -106,13 +131,27 @@ export function Create() {
           setCreatedUrl(webhook.url);
           setSecretModalVisible(true);
         } else {
-          navigate('/settings/integrations/docuninja_webhooks');
+          navigate('/docuninja/settings/webhooks');
         }
       })
       .catch((error: AxiosError<ValidationBag>) => {
         if (error.response?.status === 422) {
           toast.dismiss();
           setErrors(error.response.data);
+
+          const serverErrors = error.response.data.errors;
+          if (serverErrors) {
+            const mapped: HeaderError[] = [];
+            for (let i = 0; i < headers.length; i++) {
+              mapped.push({
+                name: serverErrors[`headers.${i}.name`]?.[0],
+                value: serverErrors[`headers.${i}.value`]?.[0],
+              });
+            }
+            if (mapped.some((e) => e.name || e.value)) {
+              setHeaderErrors(mapped);
+            }
+          }
         }
       })
       .finally(() => setIsFormBusy(false));
@@ -120,7 +159,7 @@ export function Create() {
 
   const handleSecretModalClose = () => {
     setSecretModalVisible(false);
-    navigate('/settings/integrations/docuninja_webhooks');
+    navigate('/docuninja/settings/webhooks');
   };
 
   return (
@@ -173,6 +212,21 @@ export function Create() {
           <IncludesSelector
             selectedIncludes={includes}
             onChange={setIncludes}
+          />
+        </Element>
+
+        <Element
+          leftSide="Custom Headers"
+          leftSideHelp="Optional. Custom HTTP headers sent with each delivery. Values are encrypted at rest."
+          withoutItemsCenter
+        >
+          <WebhookHeadersEditor
+            headers={headers}
+            onChange={(h) => {
+              setHeaders(h);
+              setHeaderErrors([]);
+            }}
+            errors={headerErrors}
           />
         </Element>
 

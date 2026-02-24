@@ -67,6 +67,27 @@ const Pdf = lazy(() => import('$app/pages/documents/pdf/Pdf'));
 
 const Beta = lazy(() => import('$app/pages/documents/beta/Beta'));
 
+const DocuNinjaWebhooks = lazy(() =>
+  import(
+    '$app/pages/settings/integrations/docuninja-webhooks/DocuNinjaWebhooks'
+  ).then((m) => ({ default: m.DocuNinjaWebhooks }))
+);
+const CreateDocuNinjaWebhook = lazy(() =>
+  import('$app/pages/settings/integrations/docuninja-webhooks/Create').then(
+    (m) => ({ default: m.Create })
+  )
+);
+const EditDocuNinjaWebhook = lazy(() =>
+  import('$app/pages/settings/integrations/docuninja-webhooks/Edit').then(
+    (m) => ({ default: m.Edit })
+  )
+);
+const ShowDocuNinjaWebhook = lazy(() =>
+  import('$app/pages/settings/integrations/docuninja-webhooks/Show').then(
+    (m) => ({ default: m.Show })
+  )
+);
+
 const routes = (
   <>
     <Route path="/docuninja/beta" element={<Beta />} />
@@ -133,7 +154,45 @@ const routes = (
                   />
                 }
               />
+              <Route
+                path="webhooks"
+                element={
+                  <DocuNinjaGuard
+                    guards={[docuNinjaAdmin()]}
+                    type="subPage"
+                    component={<DocuNinjaWebhooks />}
+                  />
+                }
+              />
             </Route>
+
+            <Route
+              path="settings/webhooks/create"
+              element={
+                <DocuNinjaGuard
+                  guards={[docuNinjaAdmin()]}
+                  component={<CreateDocuNinjaWebhook />}
+                />
+              }
+            />
+            <Route
+              path="settings/webhooks/:id"
+              element={
+                <DocuNinjaGuard
+                  guards={[docuNinjaAdmin()]}
+                  component={<ShowDocuNinjaWebhook />}
+                />
+              }
+            />
+            <Route
+              path="settings/webhooks/:id/edit"
+              element={
+                <DocuNinjaGuard
+                  guards={[docuNinjaAdmin()]}
+                  component={<EditDocuNinjaWebhook />}
+                />
+              }
+            />
 
             <Route
               path=":id/builder"
