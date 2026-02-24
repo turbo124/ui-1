@@ -13,7 +13,6 @@ import { docuNinjaEndpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
 import { useTitle } from '$app/common/hooks/useTitle';
-import { DocuNinjaWebhook } from '$app/common/interfaces/docuninja/webhook';
 import {
   useDocuNinjaWebhookDeliveriesQuery,
   useDocuNinjaWebhookQuery,
