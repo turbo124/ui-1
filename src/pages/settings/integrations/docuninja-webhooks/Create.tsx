@@ -119,6 +119,7 @@ export function Create() {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
       },
+      skipIntercept: true,
     })
       .then((response) => {
         toast.success('created_webhook');

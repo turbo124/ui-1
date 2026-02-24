@@ -54,6 +54,7 @@ export function DocuNinjaWebhooks() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
         },
+        skipIntercept: true,
       }
     )
       .then(() => {
@@ -78,6 +79,7 @@ export function DocuNinjaWebhooks() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
         },
+        skipIntercept: true,
       }
     )
       .then(() => {

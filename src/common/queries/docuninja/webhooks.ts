@@ -23,6 +23,7 @@ function authHeaders() {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
     },
+    skipIntercept: true,
   };
 }
 

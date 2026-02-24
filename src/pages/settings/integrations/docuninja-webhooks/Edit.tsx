@@ -130,6 +130,7 @@ export function Edit() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
         },
+        skipIntercept: true,
       }
     )
       .then(() => {

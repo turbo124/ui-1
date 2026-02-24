@@ -136,6 +136,7 @@ export function Show() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
         },
+        skipIntercept: true,
       }
     )
       .then(() => {
@@ -162,6 +163,7 @@ export function Show() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('X-DOCU-NINJA-TOKEN')}`,
         },
+        skipIntercept: true,
       }
     )
       .then(() => {
