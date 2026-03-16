@@ -3,6 +3,7 @@ import { Default } from '$app/components/layouts/Default';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import { defaultWorkflowTemplates } from '../helpers/workflowTemplates';
+import { WorkflowIcon } from '../components/shared/WorkflowIcon';
 
 export function WorkflowTemplates() {
   const [t] = useTranslation();
@@ -43,9 +44,7 @@ export function WorkflowTemplates() {
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-800 text-white">
-                        <span className="material-symbols-outlined">
-                          {template.icon}
-                        </span>
+                        <WorkflowIcon name={template.icon} size={24} />
                       </div>
                       <div>
                         <div

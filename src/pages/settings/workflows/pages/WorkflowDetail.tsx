@@ -67,7 +67,7 @@ export function WorkflowDetail() {
                 </div>
               )}
               <div className="mt-2 text-sm" style={{ color: colors.$3 }}>
-                {workflow.trigger.description}
+                {workflow.trigger?.description}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export function WorkflowDetail() {
               {t('steps')}
             </h3>
             <div className="mt-4 space-y-3">
-              {workflow.steps.map((step) => (
+              {(workflow.steps ?? []).map((step) => (
                 <div
                   key={step.id}
                   className="rounded-lg border px-4 py-3"

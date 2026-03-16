@@ -5,10 +5,103 @@ import { $refetch } from '$app/common/hooks/useRefetch';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { route } from '$app/common/helpers/route';
-import { WorkflowDefinition } from '../types/workflow';
+import { Edge } from '@xyflow/react';
+import { WorkflowDefinition, WorkflowStep, WorkflowStepKind } from '../types/workflow';
 import { AxiosError } from 'axios';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { defaultWorkflows } from '../helpers/workflowTemplates';
+
+const validKinds: Set<string> = new Set<string>([
+  'trigger', 'action', 'wait_event', 'wait_delay', 'branch', 'end',
+]);
+
+function normalizeStep(step: Record<string, any>): WorkflowStep {
+  // API may return `type` instead of `kind` — map it
+  const rawKind = step.kind ?? step.type ?? 'action';
+  const kind: WorkflowStepKind = validKinds.has(rawKind) ? rawKind : 'action';
+
+  // API returns `action` instead of `action_id`, `params` instead of `config`
+  const actionId = step.action_id ?? step.action ?? '';
+  const config = step.config ?? (Array.isArray(step.params) ? {} : step.params) ?? {};
+
+  return {
+    ...step,
+    id: step.id ?? '',
+    kind,
+    action_id: actionId,
+    name: step.name ?? '',
+    config,
+  } as WorkflowStep;
+}
+
+function buildEdgesFromSteps(steps: WorkflowStep[]): Edge[] {
+  if (steps.length < 2) return [];
+
+  const edges: Edge[] = [];
+
+  for (let i = 0; i < steps.length - 1; i++) {
+    const step = steps[i];
+    const isBranch = step.kind === 'branch';
+
+    edges.push({
+      id: `edge-${step.id}-${steps[i + 1].id}`,
+      source: step.id,
+      sourceHandle: isBranch ? 'true' : undefined,
+      target: steps[i + 1].id,
+      type: 'workflow',
+    });
+
+    // Restore GOTO edge from branch config
+    if (isBranch && step.config?.goto_step) {
+      const gotoTarget = step.config.goto_step;
+      if (steps.some((s) => s.id === gotoTarget)) {
+        edges.push({
+          id: `edge-${step.id}-false-${gotoTarget}`,
+          source: step.id,
+          sourceHandle: 'false',
+          target: gotoTarget,
+          type: 'workflow',
+        });
+      }
+    }
+  }
+
+  return edges;
+}
+
+function normalizeWorkflow(data: Record<string, any>): WorkflowDefinition {
+  const steps = ((data.steps ?? []) as Record<string, any>[]).map(normalizeStep);
+  const edges = data.edges && data.edges.length > 0
+    ? data.edges
+    : buildEdgesFromSteps(steps);
+
+  // API returns flat trigger_entity / trigger_event / trigger_conditions fields
+  // instead of a nested trigger object — map them
+  const trigger = data.trigger && typeof data.trigger === 'object' && data.trigger.entity
+    ? data.trigger
+    : {
+        entity: data.trigger_entity ?? '',
+        event: data.trigger_event ?? '',
+        description: data.trigger_description ?? '',
+        conditions: data.trigger_conditions ?? [],
+        match: data.trigger_match ?? 'and',
+      };
+
+  // API uses is_active boolean instead of status string
+  const status = data.status
+    ?? (data.is_active === true ? 'active' : data.is_active === false ? 'draft' : 'draft');
+
+  return {
+    ...data,
+    id: data.id ?? '',
+    name: data.name ?? '',
+    status,
+    trigger,
+    steps,
+    edges,
+    runs_count: data.runs_count ?? 0,
+  } as WorkflowDefinition;
+}
 
 export function useWorkflowsQuery(params?: {
   status?: string;
@@ -33,11 +126,20 @@ export function useWorkflowsQuery(params?: {
         undefined,
         { skipIntercept: true }
       )
-        .then((response: { data?: { data?: WorkflowDefinition[] } }) =>
-          Array.isArray(response.data?.data)
-            ? response.data!.data!
-            : defaultWorkflows
-        )
+        .then((response: { data?: { data?: WorkflowDefinition[] } }) => {
+          const data = response.data?.data;
+
+          if (
+            Array.isArray(data) &&
+            data.length > 0 &&
+            typeof data[0].id === 'string' &&
+            typeof data[0].name === 'string'
+          ) {
+            return data.map(normalizeWorkflow);
+          }
+
+          return defaultWorkflows;
+        })
         .catch(() => defaultWorkflows),
     { staleTime: 30_000 }
   );
@@ -58,8 +160,21 @@ export function useWorkflowQuery(id: string | undefined) {
         { skipIntercept: true }
       )
         .then(
-          (response: { data?: { data?: WorkflowDefinition } }) =>
-            response.data?.data
+          (response: { data?: { data?: WorkflowDefinition } }) => {
+            const data = response.data?.data;
+
+            if (
+              data &&
+              typeof data === 'object' &&
+              typeof data.id === 'string' &&
+              typeof data.name === 'string'
+            ) {
+              return normalizeWorkflow(data);
+            }
+
+            const fallback = defaultWorkflows.find((w) => w.id === id);
+            return fallback ?? defaultWorkflows[0];
+          }
         )
         .catch(() => {
           const fallback = defaultWorkflows.find((w) => w.id === id);
@@ -70,10 +185,42 @@ export function useWorkflowQuery(id: string | undefined) {
   );
 }
 
+/** Map frontend WorkflowDefinition back to API payload format */
+function toApiPayload(workflow: WorkflowDefinition): Record<string, any> {
+  const trigger = workflow.trigger ?? { entity: '', event: '', description: '', conditions: [], match: 'and' };
+
+  return {
+    id: workflow.id,
+    name: workflow.name,
+    description: workflow.description,
+    trigger_entity: trigger.entity,
+    trigger_event: trigger.event,
+    trigger_description: trigger.description,
+    trigger_conditions: trigger.conditions,
+    trigger_match: trigger.match,
+    is_active: workflow.status === 'active',
+    steps: (workflow.steps ?? []).map((step) => ({
+      id: step.id,
+      name: step.name,
+      type: step.kind,
+      kind: step.kind,
+      action: step.action_id,
+      action_id: step.action_id,
+      params: step.config,
+      config: step.config,
+    })),
+    edges: workflow.edges,
+  };
+}
+
 export function useSaveWorkflow() {
   const navigate = useNavigate();
 
-  return (workflow: WorkflowDefinition, isNew: boolean) => {
+  return (
+    workflow: WorkflowDefinition,
+    isNew: boolean,
+    onValidationError?: (bag: ValidationBag) => void
+  ) => {
     toast.processing();
 
     const method = isNew ? 'POST' : 'PUT';
@@ -81,7 +228,9 @@ export function useSaveWorkflow() {
       ? endpoint('/api/v1/workflows')
       : endpoint('/api/v1/workflows/:id', { id: workflow.id });
 
-    return request(method, url, workflow)
+    const payload = toApiPayload(workflow);
+
+    return request(method, url, payload)
       .then(
         (response: { data?: { data?: WorkflowDefinition } }) => {
           const saved = response.data?.data;
@@ -101,9 +250,13 @@ export function useSaveWorkflow() {
       .catch((error: AxiosError<ValidationBag>) => {
         if (error.response?.status === 422) {
           toast.dismiss();
-        }
 
-        throw error;
+          if (error.response.data && onValidationError) {
+            onValidationError(error.response.data);
+          }
+        } else {
+          toast.error();
+        }
       });
   };
 }

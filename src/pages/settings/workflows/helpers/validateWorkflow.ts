@@ -84,20 +84,20 @@ export function validateWorkflow(
   actions: WorkflowActionMetadata[]
 ): WorkflowValidationIssue[] {
   const issues: WorkflowValidationIssue[] = [];
-  const edges = workflow.edges;
+  const edges = workflow.edges ?? [];
   const trigger = workflow.trigger;
 
-  if (!trigger.entity || !trigger.event) {
+  if (!trigger?.entity || !trigger?.event) {
     issues.push({ id: 'trigger-required', message: 'Trigger entity and event are required.' });
   }
 
-  if (nodes.filter((node) => node.data.kind !== 'trigger').length === 0) {
+  if (nodes.filter((node) => node.data?.kind !== 'trigger').length === 0) {
     issues.push({ id: 'steps-required', message: 'Add at least one step after the trigger.' });
   }
 
   const orphanNodes = nodes.filter(
     (node) =>
-      node.data.kind !== 'trigger' &&
+      node.data?.kind !== 'trigger' &&
       !edges.some((edge) => edge.source === node.id || edge.target === node.id)
   );
 
@@ -105,7 +105,7 @@ export function validateWorkflow(
     issues.push({
       id: `orphan-${node.id}`,
       nodeId: node.id,
-      message: `"${node.data.label}" is not connected to the workflow.`,
+      message: `"${node.data?.label ?? node.id}" is not connected to the workflow.`,
     });
   });
 
@@ -113,7 +113,7 @@ export function validateWorkflow(
     issues.push({ id: 'cycle', message: 'Circular paths are not allowed in the workflow DAG.' });
   }
 
-  workflow.steps.forEach((step) => {
+  (workflow.steps ?? []).forEach((step) => {
     const action = actions.find((entry) => entry.id === step.action_id);
 
     if (!action) {
@@ -123,9 +123,10 @@ export function validateWorkflow(
     const paramsSchema = Array.isArray(action.params_schema)
       ? action.params_schema
       : [];
+    const config = step.config ?? {};
 
     paramsSchema.forEach((field) => {
-      if (field.required && !step.config[field.key]) {
+      if (field.required && !config[field.key]) {
         issues.push({
           id: `${step.id}-${field.key}`,
           nodeId: step.id,
@@ -134,16 +135,6 @@ export function validateWorkflow(
       }
     });
 
-    if (
-      step.kind === 'branch' &&
-      (!step.config.condition_field || !step.config.condition_operator)
-    ) {
-      issues.push({
-        id: `${step.id}-branch-condition`,
-        nodeId: step.id,
-        message: `"${step.name}" needs a condition field and operator.`,
-      });
-    }
   });
 
   if (!reachableEnds(nodes, edges)) {

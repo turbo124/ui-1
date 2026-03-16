@@ -10,15 +10,14 @@ import { useWorkflowsQuery, useWorkflowActions } from '../hooks/useWorkflows';
 import { WorkflowStatusBadge } from '../components/shared/WorkflowStatusBadge';
 import { Dropdown } from '$app/components/dropdown/Dropdown';
 import { DropdownElement } from '$app/components/dropdown/DropdownElement';
-import { useColorScheme } from '$app/common/colors';
 import { Spinner } from '$app/components/Spinner';
+import { Table, Thead, Tbody, Tr, Th, Td } from '$app/components/tables';
 
 dayjs.extend(relativeTime);
 
 export function WorkflowList() {
   useTitle('workflows');
   const [t] = useTranslation();
-  const colors = useColorScheme();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const { data: workflows, isLoading } = useWorkflowsQuery({
@@ -49,13 +48,7 @@ export function WorkflowList() {
       breadcrumbs={[{ name: t('workflows'), href: '/workflows' }]}
     >
       <div className="space-y-4">
-        <div
-          className="flex flex-col gap-3 rounded-lg border p-4 lg:flex-row lg:items-center lg:justify-between"
-          style={{
-            backgroundColor: colors.$1,
-            borderColor: colors.$4,
-          }}
-        >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid gap-3 lg:grid-cols-2">
             <InputField
               value={search}
@@ -85,127 +78,86 @@ export function WorkflowList() {
         {isLoading ? (
           <Spinner />
         ) : (
-          <div
-            className="overflow-hidden rounded-lg border"
-            style={{
-              backgroundColor: colors.$1,
-              borderColor: colors.$4,
-            }}
-          >
-            <table className="min-w-full divide-y" style={{ borderColor: colors.$4 }}>
-              <thead style={{ backgroundColor: colors.$2 }}>
-                <tr
-                  className="text-left text-xs uppercase tracking-wider"
-                  style={{ color: colors.$3 }}
-                >
-                  <th className="px-4 py-3">{t('name')}</th>
-                  <th className="px-4 py-3">{t('trigger')}</th>
-                  <th className="px-4 py-3">{t('status')}</th>
-                  <th className="px-4 py-3">{t('runs')}</th>
-                  <th className="px-4 py-3">{t('last_run')}</th>
-                  <th className="px-4 py-3">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: colors.$4 }}>
-                {filtered.map((workflow) => (
-                  <tr key={workflow.id} style={{ color: colors.$3 }}>
-                    <td className="px-4 py-3 text-sm">
-                      <Link to={`/workflows/${workflow.id}`}>
-                        {workflow.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {workflow.trigger.description}
-                    </td>
-                    <td className="px-4 py-3">
-                      <WorkflowStatusBadge status={workflow.status} />
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span
-                        className="rounded-full px-2.5 py-1 text-xs font-semibold"
-                        style={{
-                          backgroundColor: colors.$2,
-                          color: colors.$3,
-                        }}
+          <Table>
+            <Thead>
+              <Th>{t('name')}</Th>
+              <Th>{t('trigger')}</Th>
+              <Th>{t('status')}</Th>
+              <Th>{t('runs')}</Th>
+              <Th>{t('last_run')}</Th>
+              <Th>{t('actions')}</Th>
+            </Thead>
+            <Tbody>
+              {filtered.map((workflow) => (
+                <Tr key={workflow.id}>
+                  <Td>
+                    <Link to={`/workflows/${workflow.id}`}>
+                      {workflow.name}
+                    </Link>
+                  </Td>
+                  <Td>{workflow.trigger?.description ?? ''}</Td>
+                  <Td>
+                    <WorkflowStatusBadge status={workflow.status ?? 'draft'} />
+                  </Td>
+                  <Td>{workflow.runs_count ?? 0}</Td>
+                  <Td>
+                    {workflow.last_run_at
+                      ? dayjs(workflow.last_run_at).fromNow()
+                      : t('never')}
+                  </Td>
+                  <Td>
+                    <Dropdown label={t('actions')}>
+                      <DropdownElement to={`/workflows/${workflow.id}/edit`}>
+                        {t('edit')}
+                      </DropdownElement>
+                      <DropdownElement
+                        onClick={() => actions.clone(workflow.id)}
                       >
-                        {workflow.runs_count}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {workflow.last_run_at
-                        ? dayjs(workflow.last_run_at).fromNow()
-                        : t('never')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Dropdown label={t('actions')}>
+                        {t('clone')}
+                      </DropdownElement>
+                      {workflow.status === 'active' ? (
                         <DropdownElement
-                          to={`/workflows/${workflow.id}/edit`}
+                          onClick={() => actions.deactivate(workflow.id)}
                         >
-                          {t('edit')}
+                          {t('deactivate')}
                         </DropdownElement>
+                      ) : (
                         <DropdownElement
-                          onClick={() => actions.clone(workflow.id)}
+                          onClick={() => actions.activate(workflow.id)}
                         >
-                          {t('clone')}
+                          {t('activate')}
                         </DropdownElement>
-                        {workflow.status === 'active' ? (
-                          <DropdownElement
-                            onClick={() =>
-                              actions.deactivate(workflow.id)
-                            }
-                          >
-                            {t('deactivate')}
-                          </DropdownElement>
-                        ) : (
-                          <DropdownElement
-                            onClick={() =>
-                              actions.activate(workflow.id)
-                            }
-                          >
-                            {t('activate')}
-                          </DropdownElement>
-                        )}
-                        {workflow.status !== 'archived' ? (
-                          <DropdownElement
-                            onClick={() =>
-                              actions.archive(workflow.id)
-                            }
-                          >
-                            {t('archive')}
-                          </DropdownElement>
-                        ) : (
-                          <DropdownElement
-                            onClick={() =>
-                              actions.restore(workflow.id)
-                            }
-                          >
-                            {t('restore')}
-                          </DropdownElement>
-                        )}
+                      )}
+                      {workflow.status !== 'archived' ? (
                         <DropdownElement
-                          onClick={() => actions.remove(workflow.id)}
+                          onClick={() => actions.archive(workflow.id)}
                         >
-                          {t('delete')}
+                          {t('archive')}
                         </DropdownElement>
-                      </Dropdown>
-                    </td>
-                  </tr>
-                ))}
+                      ) : (
+                        <DropdownElement
+                          onClick={() => actions.restore(workflow.id)}
+                        >
+                          {t('restore')}
+                        </DropdownElement>
+                      )}
+                      <DropdownElement
+                        onClick={() => actions.remove(workflow.id)}
+                      >
+                        {t('delete')}
+                      </DropdownElement>
+                    </Dropdown>
+                  </Td>
+                </Tr>
+              ))}
 
-                {filtered.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-4 py-8 text-center text-sm"
-                      style={{ color: colors.$3 }}
-                    >
-                      {t('no_records_found')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              {filtered.length === 0 && (
+                <Tr>
+                  <Td colSpan={6}>{t('no_records_found')}</Td>
+                </Tr>
+              )}
+            </Tbody>
+          </Table>
         )}
       </div>
     </Default>

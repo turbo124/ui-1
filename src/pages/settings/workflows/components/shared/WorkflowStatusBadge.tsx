@@ -24,7 +24,7 @@ export function WorkflowStatusBadge({
         palette[status]
       )}
     >
-      {status.replace('_', ' ')}
+      {(status ?? '').replace('_', ' ')}
     </span>
   );
 }

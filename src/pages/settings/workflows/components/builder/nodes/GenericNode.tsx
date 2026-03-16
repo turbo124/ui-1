@@ -1,5 +1,6 @@
 import { Handle, NodeProps, Position } from '@xyflow/react';
 import classNames from 'classnames';
+import { WorkflowIcon } from '../../shared/WorkflowIcon';
 
 export function GenericNode({ data, selected }: NodeProps<any>) {
   const borderColor =
@@ -19,7 +20,7 @@ export function GenericNode({ data, selected }: NodeProps<any>) {
         boxShadow: selected ? `0 0 0 2px ${ringColor}` : undefined,
       }}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -27,9 +28,7 @@ export function GenericNode({ data, selected }: NodeProps<any>) {
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white"
             style={{ backgroundColor: data.color }}
           >
-            <span className="material-symbols-outlined text-lg">
-              {String(data.icon)}
-            </span>
+            <WorkflowIcon name={String(data.icon)} size={20} />
           </div>
 
           <div className="min-w-0">
@@ -53,7 +52,7 @@ export function GenericNode({ data, selected }: NodeProps<any>) {
         />
       </div>
 
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 }

@@ -108,7 +108,7 @@ export function WorkflowRunDetail() {
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <RunTimeline run={run} />
-          <RunContextPanel contextRefs={run.context_refs} />
+          <RunContextPanel contextRefs={run.context_refs ?? []} />
         </div>
       </div>
     </Default>

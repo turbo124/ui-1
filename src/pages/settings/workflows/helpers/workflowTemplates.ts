@@ -39,6 +39,16 @@ export function createBlankWorkflow(): WorkflowDefinition {
 // ---------------------------------------------------------------------------
 
 export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
+  // Manual
+  {
+    id: 'manual',
+    entity: 'Manual',
+    event: 'assigned',
+    label: 'Manually Assigned to Entity',
+    description:
+      'Fires when a user manually assigns this workflow to an entity.',
+    condition_fields: [],
+  },
   // Client
   {
     id: 'client.created',
@@ -46,7 +56,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Client is Created',
     description: 'Fires when a new client record is saved.',
-    condition_fields: ['name', 'country_id', 'balance'],
+    condition_fields: [
+      { key: 'name', label: 'Name', type: 'string' },
+      { key: 'country_id', label: 'Country', type: 'string' },
+      { key: 'balance', label: 'Balance', type: 'number' },
+    ],
   },
   {
     id: 'client.updated',
@@ -54,7 +68,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'updated',
     label: 'When a Client is Updated',
     description: 'Fires when any client field is changed.',
-    condition_fields: ['name', 'country_id', 'balance'],
+    condition_fields: [
+      { key: 'name', label: 'Name', type: 'string' },
+      { key: 'country_id', label: 'Country', type: 'string' },
+      { key: 'balance', label: 'Balance', type: 'number' },
+    ],
   },
   // Invoice
   {
@@ -63,7 +81,12 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When an Invoice is Created',
     description: 'Fires when a new invoice is created.',
-    condition_fields: ['amount', 'client_id', 'status_id', 'due_date'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'status_id', label: 'Status', type: 'string' },
+      { key: 'due_date', label: 'Due date', type: 'date' },
+    ],
   },
   {
     id: 'invoice.sent',
@@ -71,7 +94,13 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'sent',
     label: 'When an Invoice is Sent',
     description: 'Fires when an invoice is marked as sent to the client.',
-    condition_fields: ['amount', 'client_id', 'status_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'status_id', label: 'Status', type: 'string' },
+      { key: 'due_date', label: 'Due date', type: 'date' },
+
+    ],
   },
   {
     id: 'invoice.paid',
@@ -79,7 +108,12 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'paid',
     label: 'When an Invoice is Paid',
     description: 'Fires when an invoice payment is completed.',
-    condition_fields: ['amount', 'client_id', 'status_id', 'balance'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'status_id', label: 'Status', type: 'string' },
+      { key: 'balance', label: 'Balance', type: 'number' },
+    ],
   },
   {
     id: 'invoice.late',
@@ -87,7 +121,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'late',
     label: 'When an Invoice is Overdue',
     description: 'Fires when an invoice passes its due date without payment.',
-    condition_fields: ['amount', 'client_id', 'due_date'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'due_date', label: 'Due date', type: 'date' },
+    ],
   },
   // Quote
   {
@@ -96,7 +134,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Quote is Created',
     description: 'Fires when a new quote is created.',
-    condition_fields: ['amount', 'client_id', 'valid_until'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'valid_until', label: 'Valid until', type: 'date' },
+    ],
   },
   {
     id: 'quote.approved',
@@ -104,7 +146,10 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'approved',
     label: 'When a Quote is Approved',
     description: 'Fires when the client approves a quote.',
-    condition_fields: ['amount', 'client_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+    ],
   },
   // Payment
   {
@@ -113,7 +158,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Payment is Created',
     description: 'Fires when a payment is recorded.',
-    condition_fields: ['amount', 'client_id', 'type_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'type_id', label: 'Payment type', type: 'string' },
+    ],
   },
   {
     id: 'payment.failed',
@@ -121,7 +170,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'failed',
     label: 'When a Payment Fails',
     description: 'Fires when a payment attempt is declined or fails.',
-    condition_fields: ['amount', 'client_id', 'type_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+      { key: 'type_id', label: 'Payment type', type: 'string' },
+    ],
   },
   // Expense
   {
@@ -130,7 +183,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When an Expense is Created',
     description: 'Fires when a new expense is recorded.',
-    condition_fields: ['amount', 'vendor_id', 'category_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'vendor_id', label: 'Vendor', type: 'string' },
+      { key: 'category_id', label: 'Category', type: 'string' },
+    ],
   },
   // Task
   {
@@ -139,7 +196,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Task is Created',
     description: 'Fires when a new task is created.',
-    condition_fields: ['description', 'project_id', 'status_id'],
+    condition_fields: [
+      { key: 'description', label: 'Description', type: 'string' },
+      { key: 'project_id', label: 'Project', type: 'string' },
+      { key: 'status_id', label: 'Status', type: 'string' },
+    ],
   },
   // Product
   {
@@ -148,7 +209,11 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Product is Created',
     description: 'Fires when a new product is added.',
-    condition_fields: ['product_key', 'price', 'quantity'],
+    condition_fields: [
+      { key: 'product_key', label: 'Product key', type: 'string' },
+      { key: 'price', label: 'Price', type: 'number' },
+      { key: 'quantity', label: 'Quantity', type: 'number' },
+    ],
   },
   // Vendor
   {
@@ -157,7 +222,10 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Vendor is Created',
     description: 'Fires when a new vendor record is saved.',
-    condition_fields: ['name', 'country_id'],
+    condition_fields: [
+      { key: 'name', label: 'Name', type: 'string' },
+      { key: 'country_id', label: 'Country', type: 'string' },
+    ],
   },
   // Purchase Order
   {
@@ -166,7 +234,10 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Purchase Order is Created',
     description: 'Fires when a new purchase order is created.',
-    condition_fields: ['amount', 'vendor_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'vendor_id', label: 'Vendor', type: 'string' },
+    ],
   },
   // Credit
   {
@@ -175,7 +246,10 @@ export const defaultTriggerMetadata: WorkflowTriggerMetadata[] = [
     event: 'created',
     label: 'When a Credit is Created',
     description: 'Fires when a new credit note is created.',
-    condition_fields: ['amount', 'client_id'],
+    condition_fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'client_id', label: 'Client', type: 'string' },
+    ],
   },
 ];
 
@@ -460,78 +534,60 @@ export const defaultActionMetadata: WorkflowActionMetadata[] = [
     name: 'Wait / Delay',
     category: 'Waits',
     type: 'wait_delay',
-    description: 'Pause for a fixed duration.',
+    description: 'Wait until a date relative to an entity property.',
     icon: 'schedule',
     params_schema: [
       {
-        key: 'duration_value',
-        label: 'Duration',
-        type: 'number',
+        key: 'date_field',
+        label: 'Date Field',
+        type: 'date_field',
         required: true,
-        placeholder: '3',
       },
       {
-        key: 'duration_unit',
-        label: 'Unit',
+        key: 'offset_operator',
+        label: 'When',
         type: 'select',
         required: true,
         options: [
-          { label: 'Minutes', value: 'minutes' },
-          { label: 'Hours', value: 'hours' },
-          { label: 'Days', value: 'days' },
-          { label: 'Weeks', value: 'weeks' },
+          { label: 'On', value: 'on' },
+          { label: 'Before', value: 'before' },
+          { label: 'After', value: 'after' },
         ],
+      },
+      {
+        key: 'offset_days',
+        label: 'Offset (days)',
+        type: 'number',
+        placeholder: '0',
       },
     ],
   },
   // Flow control
   {
     id: 'branch',
-    name: 'Branch / Decision',
+    name: 'True / False',
     category: 'Flow',
     type: 'branch',
-    description: 'Split the workflow into two conditional paths.',
-    icon: 'alt_route',
+    description: 'Evaluate a condition and continue or stop.',
+    icon: 'call_split',
     params_schema: [
       {
-        key: 'condition_field',
-        label: 'Condition field',
-        type: 'text',
+        key: 'field',
+        label: 'Field',
+        type: 'entity_field',
         required: true,
-        placeholder: 'e.g. amount',
       },
       {
-        key: 'condition_operator',
+        key: 'operator',
         label: 'Operator',
-        type: 'select',
+        type: 'operator',
         required: true,
-        options: [
-          { label: 'Equals', value: 'eq' },
-          { label: 'Not equals', value: 'neq' },
-          { label: 'Greater than', value: 'gt' },
-          { label: 'Less than', value: 'lt' },
-          { label: 'Contains', value: 'contains' },
-          { label: 'Is empty', value: 'empty' },
-          { label: 'Is not empty', value: 'not_empty' },
-        ],
       },
       {
-        key: 'condition_value',
+        key: 'value',
         label: 'Value',
         type: 'text',
         placeholder: 'Comparison value',
-      },
-      {
-        key: 'left_label',
-        label: 'True path label',
-        type: 'text',
-        required: true,
-      },
-      {
-        key: 'right_label',
-        label: 'False path label',
-        type: 'text',
-        required: true,
       },
     ],
   },
@@ -678,7 +734,7 @@ export const defaultWorkflowTemplates: WorkflowTemplate[] = [
           kind: 'wait_delay',
           action_id: 'wait_delay',
           name: 'Wait 3 Days',
-          config: { duration_value: '3', duration_unit: 'days' },
+          config: { date_field: '$trigger.created_at', offset_operator: 'after', offset_days: '3' },
         },
         {
           id: 'bill',
@@ -827,7 +883,7 @@ export const defaultWorkflowTemplates: WorkflowTemplate[] = [
           kind: 'wait_delay',
           action_id: 'wait_delay',
           name: 'Wait 7 Days',
-          config: { duration_value: '7', duration_unit: 'days' },
+          config: { date_field: '$trigger.due_date', offset_operator: 'after', offset_days: '7' },
         },
         {
           id: 'done',

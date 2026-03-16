@@ -25,13 +25,21 @@ export interface WorkflowCondition {
   value: string;
 }
 
+export type ConditionFieldType = 'string' | 'number' | 'date';
+
+export interface ConditionFieldDef {
+  key: string;
+  label: string;
+  type: ConditionFieldType;
+}
+
 export interface WorkflowTriggerMetadata {
   id: string;
   entity: string;
   event: string;
   label: string;
   description: string;
-  condition_fields: string[];
+  condition_fields: ConditionFieldDef[];
 }
 
 export interface WorkflowActionMetadata {
@@ -52,10 +60,20 @@ export interface WorkflowActionMetadata {
 export interface WorkflowActionField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'entity_ref';
+  type: 'text' | 'textarea' | 'number' | 'select' | 'entity_ref' | 'date_field' | 'entity_field' | 'operator';
   required?: boolean;
   placeholder?: string;
   options?: Array<{ label: string; value: string }>;
+}
+
+export interface WorkflowDateField {
+  key: string;
+  label: string;
+}
+
+export interface WorkflowOperation {
+  key: string;
+  label: string;
 }
 
 export interface WorkflowStep {

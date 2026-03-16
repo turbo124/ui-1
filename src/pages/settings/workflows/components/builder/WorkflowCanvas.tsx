@@ -7,7 +7,7 @@ import {
   ReactFlowInstance,
   Edge,
 } from '@xyflow/react';
-import { DragEvent, useCallback, useState } from 'react';
+import { createContext, DragEvent, useCallback, useContext, useState } from 'react';
 import { useColorScheme } from '$app/common/colors';
 import { BuilderNode } from '../../types/workflow';
 import { WorkflowEdge } from './edges/WorkflowEdge';
@@ -31,6 +31,14 @@ const edgeTypes: Record<string, React.ComponentType<any>> = {
   workflow: WorkflowEdge,
 };
 
+export const EdgeInsertContext = createContext<
+  ((edgeId: string) => void) | null
+>(null);
+
+export function useEdgeInsert() {
+  return useContext(EdgeInsertContext);
+}
+
 interface Props {
   nodes: BuilderNode[];
   edges: Edge[];
@@ -39,6 +47,7 @@ interface Props {
   onConnect: (connection: any) => void;
   onNodeClick: (_: unknown, node: BuilderNode) => void;
   onDropStep?: (payload: { x: number; y: number; actionId: string }) => void;
+  onEdgeInsertClick?: (edgeId: string) => void;
 }
 
 export function WorkflowCanvas(props: Props) {
@@ -81,48 +90,52 @@ export function WorkflowCanvas(props: Props) {
 
   return (
     <ReactFlowProvider>
-      <div
-        className="relative h-[620px] rounded-lg border"
-        style={{
-          backgroundColor: colors.$1,
-          borderColor: colors.$4,
-        }}
-      >
-        {props.nodes.length <= 1 && (
-          <div
-            className="pointer-events-none absolute z-10 ml-6 mt-6 max-w-sm rounded-lg border border-dashed px-4 py-3 shadow-sm"
-            style={{
-              backgroundColor: colors.$1,
-              borderColor: colors.$4,
-              color: colors.$3,
-            }}
-          >
-            <div className="text-sm font-semibold">Start Building</div>
-            <div className="mt-1 text-xs opacity-70">
-              Drag a step from the Step Palette onto the canvas, or click a step
-              to add it. Use Branch/Decision nodes to split the workflow.
-            </div>
-          </div>
-        )}
-        <ReactFlow<BuilderNode>
-          fitView
-          nodes={props.nodes}
-          edges={props.edges}
-          onNodesChange={props.onNodesChange}
-          onEdgesChange={props.onEdgesChange}
-          onConnect={props.onConnect}
-          onNodeClick={props.onNodeClick}
-          onInit={(value) => setInstance(value)}
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
+      <EdgeInsertContext.Provider value={props.onEdgeInsertClick ?? null}>
+        <div
+          className="relative rounded-lg border"
+          style={{
+            backgroundColor: colors.$1,
+            borderColor: colors.$4,
+            height: 'calc(100vh - 220px)',
+            minHeight: '500px',
+          }}
         >
-          <Background gap={20} color={colors.$4} />
-          <Controls />
-          <MiniMap zoomable pannable />
-        </ReactFlow>
-      </div>
+          {props.nodes.length <= 1 && (
+            <div
+              className="pointer-events-none absolute z-10 ml-6 mt-6 max-w-sm rounded-lg border border-dashed px-4 py-3 shadow-sm"
+              style={{
+                backgroundColor: colors.$1,
+                borderColor: colors.$4,
+                color: colors.$3,
+              }}
+            >
+              <div className="text-sm font-semibold">Start Building</div>
+              <div className="mt-1 text-xs opacity-70">
+                Drag a step from the Step Palette onto the canvas, or click a step
+                to add it. Steps are executed in sequential order.
+              </div>
+            </div>
+          )}
+          <ReactFlow<BuilderNode>
+            fitView
+            nodes={props.nodes}
+            edges={props.edges}
+            onNodesChange={props.onNodesChange}
+            onEdgesChange={props.onEdgesChange}
+            onConnect={props.onConnect}
+            onNodeClick={props.onNodeClick}
+            onInit={(value) => setInstance(value)}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+          >
+            <Background gap={20} color={colors.$4} />
+            <Controls />
+            <MiniMap zoomable pannable />
+          </ReactFlow>
+        </div>
+      </EdgeInsertContext.Provider>
     </ReactFlowProvider>
   );
 }

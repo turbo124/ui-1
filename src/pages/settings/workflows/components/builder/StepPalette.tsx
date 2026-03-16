@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
-import { WorkflowActionMetadata, WorkflowStepKind } from '../../types/workflow';
+import { WorkflowActionMetadata } from '../../types/workflow';
+import { WorkflowIcon } from '../shared/WorkflowIcon';
+import { MdWidgets, MdDragIndicator } from 'react-icons/md';
 
-const kindColor: Record<WorkflowStepKind, string> = {
+const kindColor: Record<string, string> = {
   trigger: '#3B82F6',
   action: '#10B981',
   wait_event: '#F59E0B',
@@ -27,31 +29,39 @@ export function StepPalette({
 
   return (
     <div
-      className="space-y-4 rounded-lg border p-4"
+      className="space-y-3 rounded-lg border p-4"
       style={{ backgroundColor: colors.$1, borderColor: colors.$4 }}
     >
-      <div>
-        <h3
-          className="text-base font-semibold"
-          style={{ color: colors.$3 }}
+      <div className="flex items-center gap-2">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: colors.$2, color: colors.$3 }}
         >
-          {t('step_palette')}
-        </h3>
-        <p className="text-sm" style={{ color: colors.$3, opacity: 0.6 }}>
-          {t('drag_or_click_step')}
-        </p>
+          <MdWidgets size={16} />
+        </span>
+        <div>
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: colors.$3 }}
+          >
+            {t('step_palette')}
+          </h3>
+          <p className="text-xs" style={{ color: colors.$3, opacity: 0.5 }}>
+            {t('drag_or_click_step')}
+          </p>
+        </div>
       </div>
 
       {groups.map((group) => (
-        <div key={group} className="space-y-2">
+        <div key={group} className="space-y-1.5">
           <h4
             className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: colors.$3, opacity: 0.5 }}
+            style={{ color: colors.$3, opacity: 0.4 }}
           >
             {group}
           </h4>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             {actions
               .filter((action) => action.category === group)
               .map((action) => (
@@ -67,31 +77,36 @@ export function StepPalette({
                     event.dataTransfer.effectAllowed = 'move';
                   }}
                   onClick={() => onAddStep(action)}
-                  className="flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition hover:opacity-80"
+                  className="flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition hover:shadow-sm"
                   style={{ borderColor: colors.$4 }}
                 >
                   <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-white"
                     style={{ backgroundColor: kindColor[action.type] }}
                   >
-                    <span className="material-symbols-outlined text-base">
-                      {action.icon}
-                    </span>
+                    <WorkflowIcon name={action.icon} size={16} />
                   </div>
                   <div className="min-w-0">
                     <div
-                      className="text-sm font-medium truncate"
+                      className="text-xs font-medium truncate"
                       style={{ color: colors.$3 }}
                     >
                       {action.name}
                     </div>
-                    <div
-                      className="text-xs truncate"
-                      style={{ color: colors.$3, opacity: 0.6 }}
-                    >
-                      {action.description}
-                    </div>
+                    {action.description && (
+                      <div
+                        className="truncate text-[11px]"
+                        style={{ color: colors.$3, opacity: 0.5 }}
+                      >
+                        {action.description}
+                      </div>
+                    )}
                   </div>
+                  <MdDragIndicator
+                    size={14}
+                    className="ml-auto shrink-0"
+                    style={{ color: colors.$3, opacity: 0.25 }}
+                  />
                 </button>
               ))}
           </div>

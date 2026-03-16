@@ -1,10 +1,39 @@
 import { Edge, Position } from '@xyflow/react';
 import {
   BuilderNode,
+  WorkflowDateField,
   WorkflowDefinition,
   WorkflowStepKind,
 } from '../types/workflow';
 import { defaultActionMetadata } from './workflowTemplates';
+
+/**
+ * Build a human-readable subtitle for wait_delay steps from their config.
+ * e.g. "3 days after Due Date" or "On Due Date"
+ */
+export function buildWaitDelaySubtitle(
+  config: Record<string, string>,
+  dateFields?: WorkflowDateField[]
+): string {
+  const dateFieldKey = config.date_field;
+  const operator = config.offset_operator;
+  const days = config.offset_days;
+
+  if (!dateFieldKey) return 'Wait / Delay';
+
+  const dateLabel =
+    dateFields?.find((df) => df.key === dateFieldKey)?.label ??
+    dateFieldKey.replace(/^\$trigger\./, '').replace(/_/g, ' ');
+
+  if (!operator || operator === 'on' || !days || days === '0') {
+    return `On ${dateLabel}`;
+  }
+
+  const dayCount = parseInt(days, 10);
+  const dayWord = dayCount === 1 ? 'day' : 'days';
+
+  return `${dayCount} ${dayWord} ${operator} ${dateLabel}`;
+}
 
 const nodeColors: Record<WorkflowStepKind, string> = {
   trigger: '#3B82F6',
@@ -16,87 +45,81 @@ const nodeColors: Record<WorkflowStepKind, string> = {
 };
 
 export function stepToNodes(workflow: WorkflowDefinition): BuilderNode[] {
-  // Build adjacency to lay out nodes following the flow
-  const outgoing = new Map<string, string[]>();
-  workflow.edges.forEach((edge) => {
-    const list = outgoing.get(edge.source) ?? [];
-    list.push(edge.target);
-    outgoing.set(edge.source, list);
+  // Build adjacency to lay out nodes following the linear flow
+  const nextStep = new Map<string, string>();
+  (workflow.edges ?? []).forEach((edge) => {
+    nextStep.set(edge.source, edge.target);
   });
 
-  // BFS from trigger to assign positions top-down
+  // Walk the chain from trigger to assign positions top-down
   const positions = new Map<string, { x: number; y: number }>();
-  const trigger = workflow.steps.find((s) => s.kind === 'trigger');
-  const startId = trigger?.id ?? workflow.steps[0]?.id;
+  const wfSteps = workflow.steps ?? [];
+  const trigger = wfSteps.find((s) => s.kind === 'trigger');
+  const startId = trigger?.id ?? wfSteps[0]?.id;
 
   if (startId) {
-    const queue: Array<{ id: string; depth: number; lane: number }> = [
-      { id: startId, depth: 0, lane: 0 },
-    ];
+    let current: string | undefined = startId;
+    let depth = 0;
     const visited = new Set<string>();
-    const laneCountPerDepth = new Map<number, number>();
 
-    while (queue.length > 0) {
-      const { id, depth, lane } = queue.shift()!;
-
-      if (visited.has(id)) continue;
-      visited.add(id);
-
-      positions.set(id, {
-        x: 100 + lane * 300,
-        y: 60 + depth * 140,
-      });
-
-      const children = outgoing.get(id) ?? [];
-      const nextDepth = depth + 1;
-
-      children.forEach((childId, i) => {
-        if (!visited.has(childId)) {
-          const currentLane =
-            children.length > 1 ? lane + i - Math.floor(children.length / 2) : lane;
-          const usedLane = laneCountPerDepth.get(nextDepth) ?? 0;
-          const finalLane = children.length > 1 ? currentLane : usedLane;
-          laneCountPerDepth.set(nextDepth, usedLane + 1);
-          queue.push({ id: childId, depth: nextDepth, lane: finalLane });
-        }
-      });
+    while (current && !visited.has(current)) {
+      visited.add(current);
+      positions.set(current, { x: 100, y: 60 + depth * 140 });
+      depth++;
+      current = nextStep.get(current);
     }
   }
 
-  return workflow.steps.map((step, index) => {
+  const wfTrigger = workflow.trigger;
+
+  return wfSteps.map((step, index) => {
     const action = defaultActionMetadata.find(
       (entry) => entry.id === step.action_id
     );
-    const result = step.config.result;
+    const config = step.config ?? {};
+    const result = config.result;
     const color =
       step.kind === 'end' && result === 'lost'
         ? '#EF4444'
-        : nodeColors[step.kind];
+        : nodeColors[step.kind] ?? nodeColors['action'];
 
     const pos = positions.get(step.id) ?? {
       x: 100,
       y: 60 + index * 140,
     };
 
+    // For trigger steps, derive label from entity/event
+    const label =
+      step.kind === 'trigger' && wfTrigger?.entity && wfTrigger?.event
+        ? `${wfTrigger.entity} ${wfTrigger.event.replace(/_/g, ' ')}`
+        : step.name;
+
+    const subtitle =
+      step.kind === 'trigger'
+        ? wfTrigger?.description || 'Trigger'
+        : step.kind === 'wait_delay'
+          ? buildWaitDelaySubtitle(config)
+          : action?.name ?? step.kind;
+
+    const nodeType = step.kind && step.kind in nodeColors ? step.kind : 'action';
+
     return {
       id: step.id,
-      type: step.kind,
+      type: nodeType,
       position: pos,
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
       data: {
-        label: step.name,
-        subtitle: action?.name ?? step.kind,
+        label,
+        subtitle,
         kind: step.kind,
         color,
         icon: action?.icon ?? 'trip_origin',
-        leftLabel: step.config.left_label,
-        rightLabel: step.config.right_label,
       },
     };
   });
 }
 
-export function normalizeEdges(edges: Edge[]): Edge[] {
-  return edges.map((edge) => ({ ...edge, type: 'workflow' }));
+export function normalizeEdges(edges: Edge[] | undefined): Edge[] {
+  return (edges ?? []).map((edge) => ({ ...edge, type: 'workflow' }));
 }

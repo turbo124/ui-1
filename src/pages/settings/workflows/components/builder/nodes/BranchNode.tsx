@@ -1,4 +1,5 @@
 import { Handle, NodeProps, Position } from '@xyflow/react';
+import { WorkflowIcon } from '../../shared/WorkflowIcon';
 
 export function BranchNode({ data, selected }: NodeProps<any>) {
   const borderColor =
@@ -14,46 +15,53 @@ export function BranchNode({ data, selected }: NodeProps<any>) {
           : undefined,
       }}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white">
-            <span className="material-symbols-outlined text-base">
-              {String(data.icon)}
-            </span>
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white">
+          <WorkflowIcon name={String(data.icon)} size={18} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900 truncate">
+            {String(data.label)}
           </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-gray-900 truncate">
-              {String(data.label)}
-            </div>
-            <div className="text-xs text-gray-500 truncate">
-              {data.subtitle ? String(data.subtitle) : 'Branch / Decision'}
-            </div>
+          <div className="text-xs text-gray-500 truncate">
+            {data.subtitle ? String(data.subtitle) : 'True / False'}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-semibold">
-        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-center text-emerald-700">
-          {String(data.leftLabel || 'Yes')}
+      <div className="mt-3 flex items-center justify-between text-[11px] font-semibold">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: '#10B981' }}
+          />
+          <span className="text-emerald-600">True</span>
         </div>
-        <div className="rounded-lg bg-amber-50 px-3 py-2 text-center text-amber-700">
-          {String(data.rightLabel || 'No')}
+        <div className="flex items-center gap-1.5">
+          <span className="text-amber-600">False → GOTO</span>
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: '#F59E0B' }}
+          />
         </div>
       </div>
 
+      {/* True path — continues down the chain */}
       <Handle
-        id="branch-left"
+        id="true"
         type="source"
-        position={Position.Right}
-        style={{ top: '42%', background: '#10B981' }}
+        position={Position.Bottom}
+        style={{ left: '30%', background: '#10B981' }}
       />
+
+      {/* False path — GOTO link to another step */}
       <Handle
-        id="branch-right"
+        id="false"
         type="source"
-        position={Position.Right}
-        style={{ top: '74%', background: '#F59E0B' }}
+        position={Position.Bottom}
+        style={{ left: '70%', background: '#F59E0B' }}
       />
     </div>
   );
