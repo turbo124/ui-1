@@ -24,7 +24,7 @@ export function useWorkflowBuilder(
   dateFields?: WorkflowDateField[]
 ) {
   const [nodes, setNodes] = useState<BuilderNode[]>(() =>
-    stepToNodes(initialWorkflow)
+    stepToNodes(initialWorkflow, actions)
   );
   const [edges, setEdges] = useState<Edge[]>(() =>
     normalizeEdges(initialWorkflow.edges)
@@ -45,7 +45,7 @@ export function useWorkflowBuilder(
   useEffect(() => {
     if (initialWorkflow.id !== syncedIdRef.current) {
       syncedIdRef.current = initialWorkflow.id;
-      setNodes(stepToNodes(initialWorkflow));
+      setNodes(stepToNodes(initialWorkflow, actions));
       setEdges(normalizeEdges(initialWorkflow.edges));
       setSteps(initialWorkflow.steps ?? []);
       setTrigger(initialWorkflow.trigger);
@@ -64,6 +64,7 @@ export function useWorkflowBuilder(
       id: initialWorkflow.id,
       status: initialWorkflow.status,
       archived_at: initialWorkflow.archived_at,
+      is_deleted: initialWorkflow.is_deleted,
       runs_count: initialWorkflow.runs_count,
       last_run_at: initialWorkflow.last_run_at,
       name,

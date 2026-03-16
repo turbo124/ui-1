@@ -2,6 +2,7 @@ import { SelectField } from '$app/components/forms';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import {
+  ConditionFieldDef,
   WorkflowDefinition,
   WorkflowTriggerMetadata,
 } from '../../types/workflow';
@@ -12,12 +13,14 @@ import { MdBolt, MdInfoOutline, MdLock } from 'react-icons/md';
 export function TriggerConfigPanel({
   workflow,
   triggers,
+  conditionFields,
   errors,
   readOnly,
   onChange,
 }: {
   workflow: WorkflowDefinition;
   triggers: WorkflowTriggerMetadata[];
+  conditionFields?: ConditionFieldDef[];
   errors?: ValidationBag;
   readOnly?: boolean;
   onChange: (workflow: WorkflowDefinition) => void;
@@ -26,6 +29,8 @@ export function TriggerConfigPanel({
   const colors = useColorScheme();
 
   const wfTrigger = workflow.trigger ?? { entity: '', event: '', description: '', conditions: [], match: 'and' as const };
+
+  const isManual = wfTrigger.entity.toLowerCase() === 'manual';
 
   const entityOptions = Array.from(
     new Set(triggers.map((trigger) => trigger.entity))
@@ -69,22 +74,24 @@ export function TriggerConfigPanel({
         <div className="space-y-2">
           <div>
             <div className="text-xs font-medium" style={{ color: colors.$3, opacity: 0.5 }}>
-              {t('entity')}
+              {isManual ? t('type') : t('entity')}
             </div>
             <div className="text-sm font-medium" style={{ color: colors.$3 }}>
               {wfTrigger.entity || '-'}
             </div>
           </div>
-          <div>
-            <div className="text-xs font-medium" style={{ color: colors.$3, opacity: 0.5 }}>
-              {t('event')}
+          {!isManual && (
+            <div>
+              <div className="text-xs font-medium" style={{ color: colors.$3, opacity: 0.5 }}>
+                {t('event')}
+              </div>
+              <div className="text-sm font-medium" style={{ color: colors.$3 }}>
+                {wfTrigger.event
+                  ? wfTrigger.event.charAt(0).toUpperCase() + wfTrigger.event.slice(1).replace(/_/g, ' ')
+                  : '-'}
+              </div>
             </div>
-            <div className="text-sm font-medium" style={{ color: colors.$3 }}>
-              {wfTrigger.event
-                ? wfTrigger.event.charAt(0).toUpperCase() + wfTrigger.event.slice(1).replace(/_/g, ' ')
-                : '-'}
-            </div>
-          </div>
+          )}
         </div>
 
         {wfTrigger.conditions.length > 0 && (
@@ -138,13 +145,24 @@ export function TriggerConfigPanel({
         customSelector
         label={t('entity')}
         value={wfTrigger.entity}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          const manualTrigger = value.toLowerCase() === 'manual'
+            ? triggers.find((tr) => tr.entity.toLowerCase() === 'manual')
+            : undefined;
+
           onChange({
             ...workflow,
-            trigger: { ...wfTrigger, entity: value, event: '' },
-          })
-        }
+            trigger: {
+              ...wfTrigger,
+              entity: value,
+              event: manualTrigger ? manualTrigger.event : '',
+              description: manualTrigger?.label ?? '',
+              conditions: manualTrigger ? [] : wfTrigger.conditions,
+            },
+          });
+        }}
         errorMessage={
+          errors?.errors?.trigger_entity ??
           errors?.errors?.['trigger.entity'] ??
           errors?.errors?.entity
         }
@@ -157,36 +175,39 @@ export function TriggerConfigPanel({
         ))}
       </SelectField>
 
-      <SelectField
-        customSelector
-        label={t('event')}
-        value={wfTrigger.event}
-        onValueChange={(value) =>
-          onChange({
-            ...workflow,
-            trigger: {
-              ...wfTrigger,
-              event: value,
-              description:
-                availableEvents.find((e) => e.event === value)?.label ?? '',
-            },
-          })
-        }
-        errorMessage={
-          errors?.errors?.['trigger.event'] ??
-          errors?.errors?.event
-        }
-      >
-        <option value="">{t('select_event')}</option>
-        {availableEvents.map((item) => (
-          <option key={item.id} value={item.event}>
-            {item.event
-              ? item.event.charAt(0).toUpperCase() +
-                item.event.slice(1).replace(/_/g, ' ')
-              : item.id}
-          </option>
-        ))}
-      </SelectField>
+      {!isManual && (
+        <SelectField
+          customSelector
+          label={t('event')}
+          value={wfTrigger.event}
+          onValueChange={(value) =>
+            onChange({
+              ...workflow,
+              trigger: {
+                ...wfTrigger,
+                event: value,
+                description:
+                  availableEvents.find((e) => e.event === value)?.label ?? '',
+              },
+            })
+          }
+          errorMessage={
+            errors?.errors?.trigger_event ??
+            errors?.errors?.['trigger.event'] ??
+            errors?.errors?.event
+          }
+        >
+          <option value="">{t('select_event')}</option>
+          {availableEvents.map((item) => (
+            <option key={item.id} value={item.event}>
+              {item.event
+                ? item.event.charAt(0).toUpperCase() +
+                  item.event.slice(1).replace(/_/g, ' ')
+                : item.id}
+            </option>
+          ))}
+        </SelectField>
+      )}
 
       {selectedTrigger && selectedTrigger.description && (
         <div
@@ -202,20 +223,22 @@ export function TriggerConfigPanel({
         </div>
       )}
 
-      <ConditionBuilder
-        match={wfTrigger.match}
-        fields={selectedTrigger?.condition_fields ?? []}
-        conditions={wfTrigger.conditions}
-        onMatchChange={(match) =>
-          onChange({ ...workflow, trigger: { ...wfTrigger, match } })
-        }
-        onChange={(conditions) =>
-          onChange({
-            ...workflow,
-            trigger: { ...wfTrigger, conditions },
-          })
-        }
-      />
+      {!isManual && (
+        <ConditionBuilder
+          match={wfTrigger.match}
+          fields={conditionFields ?? []}
+          conditions={wfTrigger.conditions}
+          onMatchChange={(match) =>
+            onChange({ ...workflow, trigger: { ...wfTrigger, match } })
+          }
+          onChange={(conditions) =>
+            onChange({
+              ...workflow,
+              trigger: { ...wfTrigger, conditions },
+            })
+          }
+        />
+      )}
     </div>
   );
 }

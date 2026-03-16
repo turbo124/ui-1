@@ -9,18 +9,15 @@ import { Edge } from '@xyflow/react';
 import { WorkflowDefinition, WorkflowStep, WorkflowStepKind } from '../types/workflow';
 import { AxiosError } from 'axios';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
-import { defaultWorkflows } from '../helpers/workflowTemplates';
 
 const validKinds: Set<string> = new Set<string>([
   'trigger', 'action', 'wait_event', 'wait_delay', 'branch', 'end',
 ]);
 
 function normalizeStep(step: Record<string, any>): WorkflowStep {
-  // API may return `type` instead of `kind` — map it
   const rawKind = step.kind ?? step.type ?? 'action';
   const kind: WorkflowStepKind = validKinds.has(rawKind) ? rawKind : 'action';
 
-  // API returns `action` instead of `action_id`, `params` instead of `config`
   const actionId = step.action_id ?? step.action ?? '';
   const config = step.config ?? (Array.isArray(step.params) ? {} : step.params) ?? {};
 
@@ -51,7 +48,6 @@ function buildEdgesFromSteps(steps: WorkflowStep[]): Edge[] {
       type: 'workflow',
     });
 
-    // Restore GOTO edge from branch config
     if (isBranch && step.config?.goto_step) {
       const gotoTarget = step.config.goto_step;
       if (steps.some((s) => s.id === gotoTarget)) {
@@ -75,8 +71,6 @@ function normalizeWorkflow(data: Record<string, any>): WorkflowDefinition {
     ? data.edges
     : buildEdgesFromSteps(steps);
 
-  // API returns flat trigger_entity / trigger_event / trigger_conditions fields
-  // instead of a nested trigger object — map them
   const trigger = data.trigger && typeof data.trigger === 'object' && data.trigger.entity
     ? data.trigger
     : {
@@ -87,15 +81,15 @@ function normalizeWorkflow(data: Record<string, any>): WorkflowDefinition {
         match: data.trigger_match ?? 'and',
       };
 
-  // API uses is_active boolean instead of status string
-  const status = data.status
-    ?? (data.is_active === true ? 'active' : data.is_active === false ? 'draft' : 'draft');
+  const archivedAt = data.archived_at ?? 0;
 
   return {
     ...data,
     id: data.id ?? '',
     name: data.name ?? '',
-    status,
+    status: archivedAt > 0 ? 'archived' : 'active',
+    archived_at: archivedAt,
+    is_deleted: data.is_deleted ?? false,
     trigger,
     steps,
     edges,
@@ -122,32 +116,25 @@ export function useWorkflowsQuery(params?: {
     () =>
       request(
         'GET',
-        endpoint(`/api/v1/workflows?${queryParams.toString()}`),
-        undefined,
-        { skipIntercept: true }
+        endpoint(`/api/v1/workflows?${queryParams.toString()}`)
       )
         .then((response: { data?: { data?: WorkflowDefinition[] } }) => {
           const data = response.data?.data;
 
-          if (
-            Array.isArray(data) &&
-            data.length > 0 &&
-            typeof data[0].id === 'string' &&
-            typeof data[0].name === 'string'
-          ) {
+          if (Array.isArray(data)) {
             return data.map(normalizeWorkflow);
           }
 
-          return defaultWorkflows;
+          return [];
         })
-        .catch(() => defaultWorkflows),
+        .catch(() => []),
     { staleTime: 30_000 }
   );
 }
 
 export function useWorkflowQuery(id: string | undefined) {
   return useQuery<WorkflowDefinition | undefined>(
-    ['/api/v1/workflows', id],
+    ['/api/v1/workflows/detail', id],
     () => {
       if (!id) {
         return undefined;
@@ -155,9 +142,7 @@ export function useWorkflowQuery(id: string | undefined) {
 
       return request(
         'GET',
-        endpoint('/api/v1/workflows/:id', { id }),
-        undefined,
-        { skipIntercept: true }
+        endpoint('/api/v1/workflows/:id', { id })
       )
         .then(
           (response: { data?: { data?: WorkflowDefinition } }) => {
@@ -166,20 +151,15 @@ export function useWorkflowQuery(id: string | undefined) {
             if (
               data &&
               typeof data === 'object' &&
-              typeof data.id === 'string' &&
-              typeof data.name === 'string'
+              typeof data.id === 'string'
             ) {
               return normalizeWorkflow(data);
             }
 
-            const fallback = defaultWorkflows.find((w) => w.id === id);
-            return fallback ?? defaultWorkflows[0];
+            return undefined;
           }
         )
-        .catch(() => {
-          const fallback = defaultWorkflows.find((w) => w.id === id);
-          return fallback ?? defaultWorkflows[0];
-        });
+        .catch(() => undefined);
     },
     { staleTime: 30_000, enabled: Boolean(id) }
   );
@@ -198,7 +178,6 @@ function toApiPayload(workflow: WorkflowDefinition): Record<string, any> {
     trigger_description: trigger.description,
     trigger_conditions: trigger.conditions,
     trigger_match: trigger.match,
-    is_active: workflow.status === 'active',
     steps: (workflow.steps ?? []).map((step) => ({
       id: step.id,
       name: step.name,
@@ -288,13 +267,13 @@ export function useWorkflowActions() {
     clone: (id: string) => {
       toast.processing();
 
-      return request(
-        'POST',
-        endpoint('/api/v1/workflows/:id/clone', { id })
-      )
+      return request('POST', endpoint('/api/v1/workflows/bulk'), {
+        ids: [id],
+        action: 'clone',
+      })
         .then(
-          (response: { data?: { data?: WorkflowDefinition } }) => {
-            const cloned = response.data?.data;
+          (response: { data?: { data?: WorkflowDefinition[] } }) => {
+            const cloned = response.data?.data?.[0];
             toast.success('cloned_workflow');
             $refetch(['workflows']);
 
@@ -309,8 +288,7 @@ export function useWorkflowActions() {
           toast.error();
         });
     },
-    activate: (id: string) => bulk([id], 'activate'),
-    deactivate: (id: string) => bulk([id], 'deactivate'),
+    cancelRuns: (id: string) => bulk([id], 'cancel_runs'),
   };
 }
 

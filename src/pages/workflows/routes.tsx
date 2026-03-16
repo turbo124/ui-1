@@ -13,9 +13,6 @@ const WorkflowTemplates = lazy(
 const WorkflowBuilder = lazy(
   () => import('$app/pages/settings/workflows/pages/WorkflowBuilder')
 );
-const WorkflowDetail = lazy(
-  () => import('$app/pages/settings/workflows/pages/WorkflowDetail')
-);
 const WorkflowRunList = lazy(
   () => import('$app/pages/settings/workflows/pages/WorkflowRunList')
 );
@@ -58,7 +55,7 @@ export const workflowRoutes = (
         element={
           <Guard
             guards={[or(admin(), owner())]}
-            component={<WorkflowDetail />}
+            component={<WorkflowBuilder />}
           />
         }
       />

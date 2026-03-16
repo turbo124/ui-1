@@ -1,6 +1,14 @@
 import { Handle, NodeProps, Position } from '@xyflow/react';
 import { WorkflowIcon } from '../../shared/WorkflowIcon';
 
+const handleStyle: React.CSSProperties = {
+  width: 12,
+  height: 12,
+  borderRadius: '50%',
+  border: '2px solid #fff',
+  boxShadow: '0 0 0 1px #94a3b8',
+};
+
 export function BranchNode({ data, selected }: NodeProps<any>) {
   const borderColor =
     data.status === 'invalid' ? '#FCA5A5' : 'rgba(139, 92, 246, 0.2)';
@@ -15,7 +23,7 @@ export function BranchNode({ data, selected }: NodeProps<any>) {
           : undefined,
       }}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Top} style={{ ...handleStyle, background: '#8B5CF6' }} />
 
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white">
@@ -26,7 +34,7 @@ export function BranchNode({ data, selected }: NodeProps<any>) {
             {String(data.label)}
           </div>
           <div className="text-xs text-gray-500 truncate">
-            {data.subtitle ? String(data.subtitle) : 'True / False'}
+            {data.subtitle ? String(data.subtitle) : 'Conditional'}
           </div>
         </div>
       </div>
@@ -53,7 +61,7 @@ export function BranchNode({ data, selected }: NodeProps<any>) {
         id="true"
         type="source"
         position={Position.Bottom}
-        style={{ left: '30%', background: '#10B981' }}
+        style={{ ...handleStyle, left: '30%', background: '#10B981' }}
       />
 
       {/* False path — GOTO link to another step */}
@@ -61,7 +69,7 @@ export function BranchNode({ data, selected }: NodeProps<any>) {
         id="false"
         type="source"
         position={Position.Bottom}
-        style={{ left: '70%', background: '#F59E0B' }}
+        style={{ ...handleStyle, left: '70%', background: '#F59E0B' }}
       />
     </div>
   );

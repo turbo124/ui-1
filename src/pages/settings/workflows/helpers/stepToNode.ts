@@ -1,11 +1,11 @@
 import { Edge, Position } from '@xyflow/react';
 import {
   BuilderNode,
+  WorkflowActionMetadata,
   WorkflowDateField,
   WorkflowDefinition,
   WorkflowStepKind,
 } from '../types/workflow';
-import { defaultActionMetadata } from './workflowTemplates';
 
 /**
  * Build a human-readable subtitle for wait_delay steps from their config.
@@ -35,6 +35,25 @@ export function buildWaitDelaySubtitle(
   return `${dayCount} ${dayWord} ${operator} ${dateLabel}`;
 }
 
+/**
+ * Build a human-readable subtitle for wait_event steps from their config.
+ * e.g. "Invoice paid" or "Quote approved"
+ */
+export function buildWaitEventSubtitle(
+  config: Record<string, string>
+): string {
+  const entity = config.entity;
+  const event = config.event;
+
+  if (!entity && !event) return 'Wait for Event';
+
+  const parts: string[] = [];
+  if (entity) parts.push(entity);
+  if (event) parts.push(event.replace(/_/g, ' '));
+
+  return parts.join(' ') || 'Wait for Event';
+}
+
 const nodeColors: Record<WorkflowStepKind, string> = {
   trigger: '#3B82F6',
   action: '#10B981',
@@ -44,14 +63,16 @@ const nodeColors: Record<WorkflowStepKind, string> = {
   end: '#6B7280',
 };
 
-export function stepToNodes(workflow: WorkflowDefinition): BuilderNode[] {
-  // Build adjacency to lay out nodes following the linear flow
+export function stepToNodes(
+  workflow: WorkflowDefinition,
+  actions?: WorkflowActionMetadata[]
+): BuilderNode[] {
   const nextStep = new Map<string, string>();
   (workflow.edges ?? []).forEach((edge) => {
+    if (edge.sourceHandle === 'false') return;
     nextStep.set(edge.source, edge.target);
   });
 
-  // Walk the chain from trigger to assign positions top-down
   const positions = new Map<string, { x: number; y: number }>();
   const wfSteps = workflow.steps ?? [];
   const trigger = wfSteps.find((s) => s.kind === 'trigger');
@@ -71,24 +92,27 @@ export function stepToNodes(workflow: WorkflowDefinition): BuilderNode[] {
   }
 
   const wfTrigger = workflow.trigger;
+  const actionList = actions ?? [];
 
   return wfSteps.map((step, index) => {
-    const action = defaultActionMetadata.find(
-      (entry) => entry.id === step.action_id
+    const action = actionList.find(
+      (entry: WorkflowActionMetadata) => entry.id === step.action_id
     );
     const config = step.config ?? {};
-    const result = config.result;
+    const result = config.end_status ?? config.result;
+    const isRestart = config.restart === 'true';
     const color =
-      step.kind === 'end' && result === 'lost'
-        ? '#EF4444'
-        : nodeColors[step.kind] ?? nodeColors['action'];
+      step.kind === 'end' && isRestart
+        ? '#3B82F6'
+        : step.kind === 'end' && result === 'lost'
+          ? '#EF4444'
+          : nodeColors[step.kind] ?? nodeColors['action'];
 
     const pos = positions.get(step.id) ?? {
       x: 100,
-      y: 60 + index * 140,
+      y: 60 + (positions.size + index) * 140,
     };
 
-    // For trigger steps, derive label from entity/event
     const label =
       step.kind === 'trigger' && wfTrigger?.entity && wfTrigger?.event
         ? `${wfTrigger.entity} ${wfTrigger.event.replace(/_/g, ' ')}`
@@ -97,9 +121,18 @@ export function stepToNodes(workflow: WorkflowDefinition): BuilderNode[] {
     const subtitle =
       step.kind === 'trigger'
         ? wfTrigger?.description || 'Trigger'
-        : step.kind === 'wait_delay'
-          ? buildWaitDelaySubtitle(config)
-          : action?.name ?? step.kind;
+        : step.kind === 'end' && isRestart
+          ? 'Loops back to start'
+          : step.kind === 'wait_delay'
+            ? buildWaitDelaySubtitle(config)
+            : step.kind === 'wait_event'
+              ? buildWaitEventSubtitle(config)
+              : action?.name ?? step.kind;
+
+    const icon =
+      step.kind === 'end' && isRestart
+        ? 'replay'
+        : action?.icon ?? 'trip_origin';
 
     const nodeType = step.kind && step.kind in nodeColors ? step.kind : 'action';
 
@@ -114,7 +147,8 @@ export function stepToNodes(workflow: WorkflowDefinition): BuilderNode[] {
         subtitle,
         kind: step.kind,
         color,
-        icon: action?.icon ?? 'trip_origin',
+        icon,
+        restart: isRestart,
       },
     };
   });

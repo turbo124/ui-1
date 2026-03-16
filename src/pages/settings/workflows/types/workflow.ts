@@ -8,7 +8,7 @@ export type WorkflowStepKind =
   | 'branch'
   | 'end';
 
-export type WorkflowStatus = 'active' | 'draft' | 'archived';
+export type WorkflowStatus = 'active' | 'archived';
 
 export type WorkflowRunStatus =
   | 'active'
@@ -25,22 +25,41 @@ export interface WorkflowCondition {
   value: string;
 }
 
-export type ConditionFieldType = 'string' | 'number' | 'date';
+// --- Trigger metadata (from /api/v1/workflows/metadata/triggers) ---
 
-export interface ConditionFieldDef {
-  key: string;
+export interface TriggerEvent {
+  event: string;
   label: string;
-  type: ConditionFieldType;
 }
 
+export interface TriggerEntityMetadata {
+  entity: string;
+  label: string;
+  events: TriggerEvent[];
+}
+
+// Flattened form used internally by the builder (one row per entity+event)
 export interface WorkflowTriggerMetadata {
   id: string;
   entity: string;
   event: string;
   label: string;
   description: string;
-  condition_fields: ConditionFieldDef[];
 }
+
+// --- Fields metadata (from /api/v1/workflows/metadata/fields) ---
+
+export type ConditionFieldType = 'string' | 'number' | 'date' | 'status' | 'relation';
+
+export interface ConditionFieldDef {
+  key: string;
+  label: string;
+  type: ConditionFieldType;
+  operators?: string[];
+  options?: Array<{ value: string | number; label: string }>;
+}
+
+// --- Action metadata (from /api/v1/workflows/metadata/actions) ---
 
 export interface WorkflowActionMetadata {
   id: string;
@@ -49,6 +68,7 @@ export interface WorkflowActionMetadata {
   type: WorkflowStepKind;
   description: string;
   icon: string;
+  entities?: string[];
   produces_entity?: {
     variable: string;
     entity: string;
@@ -60,21 +80,55 @@ export interface WorkflowActionMetadata {
 export interface WorkflowActionField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'entity_ref' | 'date_field' | 'entity_field' | 'operator';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'select'
+    | 'entity_ref'
+    | 'entity_reference'
+    | 'date_field'
+    | 'entity_field'
+    | 'operator'
+    | 'url'
+    | 'user_select'
+    | 'field_select'
+    | 'operation_select'
+    | 'dynamic'
+    | 'number_or_full';
   required?: boolean;
   placeholder?: string;
   options?: Array<{ label: string; value: string }>;
+  visible_when?: { field: string; value: string };
 }
+
+// --- Date fields metadata (from /api/v1/workflows/metadata/date_fields) ---
 
 export interface WorkflowDateField {
   key: string;
   label: string;
 }
 
+export interface DateFieldsResponse {
+  offset_operators: Array<{ value: string; label: string }>;
+  entity_fields: Record<string, Array<{ field: string; label: string }>>;
+}
+
+// --- Operations metadata (from /api/v1/workflows/metadata/operations) ---
+
 export interface WorkflowOperation {
   key: string;
   label: string;
+  category?: string;
+  guard?: {
+    field: string;
+    operator: string;
+    value: unknown;
+  } | null;
+  args?: Array<{ key: string; type: string; required?: boolean }>;
 }
+
+// --- Workflow data model ---
 
 export interface WorkflowStep {
   id: string;
@@ -90,7 +144,8 @@ export interface WorkflowDefinition {
   name: string;
   description?: string;
   status: WorkflowStatus;
-  archived_at?: number;
+  archived_at: number;
+  is_deleted: boolean;
   trigger: {
     entity: string;
     event: string;
@@ -108,11 +163,11 @@ export interface WorkflowTemplate {
   id: string;
   name: string;
   icon: string;
-  category: 'Sales' | 'Billing' | 'Onboarding' | 'Operations';
+  category: string;
   summary: string;
   trigger_description: string;
   step_count: number;
-  workflow: WorkflowDefinition;
+  workflow?: WorkflowDefinition;
 }
 
 export interface WorkflowRunStep {
@@ -160,6 +215,7 @@ export interface BuilderNodeData extends Record<string, unknown> {
   status?: 'invalid' | 'valid';
   leftLabel?: string;
   rightLabel?: string;
+  restart?: boolean;
 }
 
 export type BuilderNode = Node<BuilderNodeData>;

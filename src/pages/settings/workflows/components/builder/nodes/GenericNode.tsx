@@ -2,6 +2,14 @@ import { Handle, NodeProps, Position } from '@xyflow/react';
 import classNames from 'classnames';
 import { WorkflowIcon } from '../../shared/WorkflowIcon';
 
+const handleStyle: React.CSSProperties = {
+  width: 12,
+  height: 12,
+  borderRadius: '50%',
+  border: '2px solid #fff',
+  boxShadow: '0 0 0 1px #94a3b8',
+};
+
 export function GenericNode({ data, selected }: NodeProps<any>) {
   const borderColor =
     data.status === 'invalid' ? '#FCA5A5' : `${data.color}33`;
@@ -20,7 +28,7 @@ export function GenericNode({ data, selected }: NodeProps<any>) {
         boxShadow: selected ? `0 0 0 2px ${ringColor}` : undefined,
       }}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Top} style={{ ...handleStyle, background: data.color || '#64748b' }} />
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -52,7 +60,7 @@ export function GenericNode({ data, selected }: NodeProps<any>) {
         />
       </div>
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Bottom} style={{ ...handleStyle, background: data.color || '#64748b' }} />
     </div>
   );
 }

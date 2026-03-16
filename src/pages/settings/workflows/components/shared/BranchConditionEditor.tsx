@@ -12,18 +12,18 @@ const stringOperators = [
 ];
 
 const numberOperators = [
-  { label: 'Equals', value: 'eq' },
-  { label: 'Not equals', value: 'neq' },
-  { label: 'Greater than', value: 'gt' },
-  { label: 'Less than', value: 'lt' },
-  { label: 'Greater than or equal', value: 'gte' },
-  { label: 'Less than or equal', value: 'lte' },
+  { label: '= Equal to', value: 'eq' },
+  { label: '!= Not equal to', value: 'neq' },
+  { label: '> Greater than', value: 'gt' },
+  { label: '< Less than', value: 'lt' },
+  { label: '>= Greater than or equal to', value: 'gte' },
+  { label: '<= Less than or equal to', value: 'lte' },
 ];
 
 const dateOperators = [
-  { label: 'Is more than', value: 'date_gt' },
-  { label: 'Is less than', value: 'date_lt' },
-  { label: 'Is exactly', value: 'date_eq' },
+  { label: 'After', value: 'date_gt' },
+  { label: 'Before', value: 'date_lt' },
+  { label: 'On', value: 'date_eq' },
   { label: 'Has passed', value: 'date_past' },
   { label: 'Is in the future', value: 'date_future' },
 ];
@@ -153,6 +153,7 @@ export function BranchConditionEditor({
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <InputField
+                label={isDateOperator ? `${t('value')} (${conditionUnit || 'days'})` : undefined}
                 value={conditionValue}
                 placeholder={isDateOperator ? '3' : fieldType === 'number' ? '0' : t('enter_value')}
                 onValueChange={(value) => onChange({ condition_value: value })}

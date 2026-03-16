@@ -1,21 +1,19 @@
 import '@xyflow/react/dist/style.css';
 
 import { useMediaQuery } from 'react-responsive';
-import { useCallback, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { Default } from '$app/components/layouts/Default';
 import { InputField } from '$app/components/forms';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
-import {
-  createBlankWorkflow,
-  defaultWorkflowTemplates,
-} from '../helpers/workflowTemplates';
+import { createBlankWorkflow } from '../helpers/workflowTemplates';
 import { useWorkflowMetadata } from '../hooks/useWorkflowMetadata';
 import { useWorkflowBuilder } from '../hooks/useWorkflowBuilder';
 import {
   useWorkflowQuery,
+  useWorkflowActions,
   useSaveWorkflow,
 } from '../hooks/useWorkflows';
 import { TriggerConfigPanel } from '../components/builder/TriggerConfigPanel';
@@ -28,7 +26,18 @@ import {
 } from '../types/workflow';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { Spinner } from '$app/components/Spinner';
-import { MdClose, MdEdit } from 'react-icons/md';
+import { ResourceActions } from '$app/components/ResourceActions';
+import { Action } from '$app/components/ResourceActions';
+import { DropdownElement } from '$app/components/dropdown/DropdownElement';
+import { Icon } from '$app/components/icons/Icon';
+import {
+  MdArchive,
+  MdClose,
+  MdContentCopy,
+  MdDelete,
+  MdEdit,
+  MdRestore,
+} from 'react-icons/md';
 
 /**
  * Outer shell — resolves the initial workflow data before mounting the builder.
@@ -36,10 +45,8 @@ import { MdClose, MdEdit } from 'react-icons/md';
  */
 export function WorkflowBuilder() {
   const [t] = useTranslation();
-  const [searchParams] = useSearchParams();
   const { id } = useParams();
   const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
-  const templateId = searchParams.get('template');
   const colors = useColorScheme();
 
   const { data: existingWorkflow, isLoading: isLoadingWorkflow } =
@@ -74,20 +81,9 @@ export function WorkflowBuilder() {
     );
   }
 
-  const initialWorkflow = (() => {
-    if (id && existingWorkflow) {
-      return existingWorkflow;
-    }
-
-    if (templateId) {
-      const template = defaultWorkflowTemplates.find(
-        (tmpl) => tmpl.id === templateId
-      );
-      return template?.workflow ?? createBlankWorkflow();
-    }
-
-    return createBlankWorkflow();
-  })();
+  const initialWorkflow = (id && existingWorkflow)
+    ? existingWorkflow
+    : createBlankWorkflow();
 
   return (
     <WorkflowBuilderInner
@@ -116,9 +112,11 @@ function WorkflowBuilderInner({
   const colors = useColorScheme();
   const navigate = useNavigate();
 
-  const { actions, triggers, dateFields, operations, fields } = useWorkflowMetadata();
-  const builder = useWorkflowBuilder(initialWorkflow, actions, dateFields);
+  const builder = useWorkflowBuilder(initialWorkflow, [], []);
+  const { actions, triggers, dateFields, operations, fields, isLoading: isMetadataLoading } =
+    useWorkflowMetadata(builder.trigger?.entity);
   const saveWorkflow = useSaveWorkflow();
+  const workflowActions = useWorkflowActions();
 
   const [errors, setErrors] = useState<ValidationBag>();
   const [editingDescription, setEditingDescription] = useState(false);
@@ -128,29 +126,52 @@ function WorkflowBuilderInner({
 
   const isTriggerSelected = builder.selectedStep?.kind === 'trigger';
 
-  const selectedTrigger = triggers.find(
-    (tr) =>
-      tr.entity === builder.trigger?.entity &&
-      tr.event === builder.trigger?.event
-  );
-  const triggerConditionFields = selectedTrigger?.condition_fields ?? [];
-  // Merge trigger-specific fields with general metadata fields, deduplicating by key
-  const conditionFields = useMemo(() => {
-    const seen = new Set(triggerConditionFields.map((f) => f.key));
-    return [
-      ...triggerConditionFields,
-      ...fields.filter((f) => !seen.has(f.key)),
-    ];
-  }, [triggerConditionFields, fields]);
+  const conditionFields = fields;
 
   const handleSave = useCallback(() => {
     setErrors(undefined);
     saveWorkflow(builder.workflow, isNew, setErrors);
   }, [builder.workflow, isNew, saveWorkflow]);
 
-  const handleCancel = useCallback(() => {
-    navigate('/workflows');
-  }, [navigate]);
+  const resourceActions: Action<WorkflowDefinition>[] = isNew
+    ? []
+    : [
+        (wf) => (
+          <DropdownElement
+            onClick={() => workflowActions.clone(wf.id)}
+            icon={<Icon element={MdContentCopy} />}
+          >
+            {t('clone')}
+          </DropdownElement>
+        ),
+        (wf) =>
+          (wf.archived_at ?? 0) === 0 && (
+            <DropdownElement
+              onClick={() => workflowActions.archive(wf.id)}
+              icon={<Icon element={MdArchive} />}
+            >
+              {t('archive')}
+            </DropdownElement>
+          ),
+        (wf) =>
+          (wf.archived_at ?? 0) > 0 && (
+            <DropdownElement
+              onClick={() => workflowActions.restore(wf.id)}
+              icon={<Icon element={MdRestore} />}
+            >
+              {t('restore')}
+            </DropdownElement>
+          ),
+        (wf) =>
+          !wf.is_deleted && (
+            <DropdownElement
+              onClick={() => workflowActions.remove(wf.id)}
+              icon={<Icon element={MdDelete} />}
+            >
+              {t('delete')}
+            </DropdownElement>
+          ),
+      ];
 
   const handleAddStep = (action: WorkflowActionMetadata) => {
     // Find the last step in the chain (the one with no outgoing edge)
@@ -196,10 +217,41 @@ function WorkflowBuilderInner({
     [insertEdgeId, builder]
   );
 
-  const validationMessages = useMemo(
-    () => builder.issues.map((issue) => issue.message),
+  const validationIssues = useMemo(
+    () => builder.issues,
     [builder.issues]
   );
+
+  // Resizable sidebar
+  const [sidebarWidth, setSidebarWidth] = useState(340);
+  const isResizing = useRef(false);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = startX - moveEvent.clientX;
+      const newWidth = Math.min(700, Math.max(280, startWidth + delta));
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isResizing.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [sidebarWidth]);
 
   return (
     <Default
@@ -211,8 +263,13 @@ function WorkflowBuilderInner({
           href: editId ? `/workflows/${editId}/edit` : '/workflows/create',
         },
       ]}
-      onSaveClick={handleSave}
-      onCancelClick={handleCancel}
+      navigationTopRight={
+        <ResourceActions
+          resource={builder.workflow}
+          onSaveClick={handleSave}
+          actions={resourceActions}
+        />
+      }
     >
       <div className="space-y-4">
         {/* Workflow name & description */}
@@ -271,10 +328,32 @@ function WorkflowBuilderInner({
           )}
         </div>
 
-        {/* 2-column layout: canvas | right panel */}
-        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        {validationIssues.length > 0 && (
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              borderColor: 'rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <div className="text-xs font-semibold text-red-700">
+              {t('validation_issues')}
+            </div>
+            <ul className="mt-1.5 list-disc pl-4 text-xs text-red-600">
+              {validationIssues.map((issue) => (
+                <li key={issue.id}>{issue.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 2-column layout: canvas | resize handle | right panel */}
+        <div
+          className="grid items-start xl:grid-cols-[minmax(0,1fr)_auto]"
+          style={{ gap: 0 }}
+        >
           {/* Canvas + edge insert picker */}
-          <div className="relative">
+          <div className="relative" style={{ marginRight: '4px' }}>
             <WorkflowCanvas
               nodes={builder.nodes as any}
               edges={builder.edges}
@@ -343,65 +422,68 @@ function WorkflowBuilderInner({
             )}
           </div>
 
-          {/* Right column: context-sensitive panel */}
-          <div className="sticky top-4 space-y-3">
-            {isTriggerSelected ? (
-              <TriggerConfigPanel
-                key="trigger"
-                workflow={builder.workflow}
-                triggers={triggers}
-                errors={errors}
-                readOnly={!isNew}
-                onChange={(updated) => {
-                  setErrors(undefined);
-                  builder.setTrigger(updated.trigger);
-                }}
-              />
-            ) : (
-              <PropertiesPanel
-                key={builder.selectedNodeId}
-                step={builder.selectedStep}
-                steps={builder.steps}
-                edges={builder.edges}
-                actions={actions}
-                errors={errors}
-                onChange={(step) => {
-                  setErrors(undefined);
-                  builder.updateStep(step);
-                }}
-                onRemoveStep={handleRemoveSelectedStep}
-                onMoveStep={(direction) => {
-                  if (builder.selectedStep) {
-                    builder.moveStep(builder.selectedStep.id, direction);
-                  }
-                }}
-                conditionFields={conditionFields}
-                dateFields={dateFields}
-                operations={operations}
-              />
-            )}
-
-            {/* Step palette — always visible for drag-and-drop */}
-            <StepPalette actions={actions} onAddStep={handleAddStep} />
-
-            {builder.issues.length > 0 && (
+          {/* Right column: resize handle + context-sensitive panel */}
+          <div className="sticky top-4 flex" style={{ width: sidebarWidth }}>
+            {/* Resize handle */}
+            <div
+              onMouseDown={handleResizeStart}
+              className="flex w-2 flex-shrink-0 cursor-col-resize items-center justify-center"
+              style={{ marginRight: '4px' }}
+            >
               <div
-                className="rounded-lg border p-3"
-                style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                  borderColor: 'rgba(239, 68, 68, 0.2)',
-                }}
-              >
-                <div className="text-xs font-semibold text-red-700">
-                  {t('validation_issues')}
-                </div>
-                <ul className="mt-1.5 list-disc pl-4 text-xs text-red-600">
-                  {validationMessages.map((issue) => (
-                    <li key={issue}>{issue}</li>
-                  ))}
-                </ul>
+                className="h-8 w-0.5 rounded-full"
+                style={{ backgroundColor: colors.$4 }}
+              />
+            </div>
+          <div className="min-w-0 flex-1 space-y-3">
+            {isMetadataLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner />
               </div>
+            ) : (
+              <>
+                {isTriggerSelected ? (
+                  <TriggerConfigPanel
+                    key="trigger"
+                    workflow={builder.workflow}
+                    triggers={triggers}
+                    conditionFields={conditionFields}
+                    errors={errors}
+                    readOnly={!isNew}
+                    onChange={(updated) => {
+                      setErrors(undefined);
+                      builder.setTrigger(updated.trigger);
+                    }}
+                  />
+                ) : (
+                  <PropertiesPanel
+                    key={builder.selectedNodeId}
+                    step={builder.selectedStep}
+                    steps={builder.steps}
+                    edges={builder.edges}
+                    actions={actions}
+                    errors={errors}
+                    onChange={(step) => {
+                      setErrors(undefined);
+                      builder.updateStep(step);
+                    }}
+                    onRemoveStep={handleRemoveSelectedStep}
+                    onMoveStep={(direction) => {
+                      if (builder.selectedStep) {
+                        builder.moveStep(builder.selectedStep.id, direction);
+                      }
+                    }}
+                    conditionFields={conditionFields}
+                    dateFields={dateFields}
+                    operations={operations}
+                  />
+                )}
+
+                {/* Step palette — always visible for drag-and-drop */}
+                <StepPalette actions={actions} onAddStep={handleAddStep} />
+              </>
             )}
+          </div>
           </div>
         </div>
       </div>

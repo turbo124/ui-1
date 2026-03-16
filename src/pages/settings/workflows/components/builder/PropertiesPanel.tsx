@@ -11,11 +11,13 @@ import {
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { useContextVariables } from '../../hooks/useContextVariables';
 import { EntityRefSelector } from '../shared/EntityRefSelector';
+import { SendEmailPanel } from './SendEmailPanel';
 import { Edge } from '@xyflow/react';
 import {
   MdArrowUpward,
   MdArrowDownward,
   MdDelete,
+  MdInfoOutline,
   MdTouchApp,
 } from 'react-icons/md';
 
@@ -53,7 +55,8 @@ export function PropertiesPanel({
     if (!errors?.errors || stepIndex < 0) return undefined;
     return (
       errors.errors[`steps.${stepIndex}.${key}`] ??
-      errors.errors[`steps.${stepIndex}.config.${key}`]
+      errors.errors[`steps.${stepIndex}.config.${key}`] ??
+      errors.errors[`steps.${stepIndex}.params.${key}`]
     );
   };
   const contextVariables = useContextVariables(
@@ -66,10 +69,10 @@ export function PropertiesPanel({
     ? action!.params_schema
     : [];
   const incomingEdge = step
-    ? edges.find((e) => e.target === step.id)
+    ? edges.find((e) => e.target === step.id && e.sourceHandle !== 'false')
     : undefined;
   const outgoingEdges = step
-    ? edges.filter((e) => e.source === step.id)
+    ? edges.filter((e) => e.source === step.id && e.sourceHandle !== 'false')
     : [];
   const outgoingEdge = outgoingEdges[0];
   const parentStep = incomingEdge
@@ -83,14 +86,14 @@ export function PropertiesPanel({
     step.kind !== 'trigger' &&
     !!parentStep &&
     parentStep.kind !== 'trigger' &&
-    edges.filter((e) => e.target === step.id).length === 1;
+    edges.filter((e) => e.target === step.id && e.sourceHandle !== 'false').length === 1;
   const canMoveDown =
     !!step &&
     step.kind !== 'trigger' &&
     step.kind !== 'end' &&
     !!childStep &&
     childStep.kind !== 'end' &&
-    edges.filter((e) => e.source === step.id).length === 1;
+    edges.filter((e) => e.source === step.id && e.sourceHandle !== 'false').length === 1;
 
   if (!step) {
     return (
@@ -203,27 +206,170 @@ export function PropertiesPanel({
         )}
       </div>
 
-      {/* Step configuration fields */}
-      {fields.length > 0 && (
-        <div
-          className="space-y-3 rounded-lg border p-4"
-          style={{ backgroundColor: colors.$1, borderColor: colors.$4 }}
-        >
+      {/* Step configuration — action-specific panels */}
+      {step.action_id === 'send_email' && action ? (
+        <SendEmailPanel
+          step={step}
+          action={action}
+          errors={stepErrors}
+          contextVariables={contextVariables}
+          onChange={onChange}
+        />
+      ) : (
+        fields.length > 0 && (
           <div
-            className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: colors.$3, opacity: 0.5 }}
+            className="space-y-3 rounded-lg border p-4"
+            style={{ backgroundColor: colors.$1, borderColor: colors.$4 }}
           >
-            {t('configuration')}
-          </div>
+            <div
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: colors.$3, opacity: 0.5 }}
+            >
+              {t('configuration')}
+            </div>
 
-          {fields.map((field) => {
-            if (field.type === 'entity_field') {
+            {fields.map((field) => {
+              if (
+                field.visible_when &&
+                (step.config ?? {})[field.visible_when.field] !==
+                  field.visible_when.value
+              ) {
+                return null;
+              }
+
+              if (field.type === 'entity_field') {
+                return (
+                  <SelectField
+                    key={field.key}
+                    customSelector
+                    label={field.label}
+                    value={(step.config ?? {})[field.key]}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  >
+                    <option value="">{t('select_value')}</option>
+                    {conditionFields.map((cf) => (
+                      <option key={cf.key} value={cf.key}>
+                        {cf.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                );
+              }
+
+              if (field.type === 'operator') {
+                return (
+                  <SelectField
+                    key={field.key}
+                    customSelector
+                    label={field.label}
+                    value={(step.config ?? {})[field.key]}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  >
+                    <option value="">{t('select_value')}</option>
+                    {operations.map((op) => (
+                      <option key={op.key} value={op.key}>
+                        {op.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                );
+              }
+
+              if (field.type === 'date_field') {
+                return (
+                  <SelectField
+                    key={field.key}
+                    customSelector
+                    label={field.label}
+                    value={(step.config ?? {})[field.key]}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  >
+                    <option value="">{t('select_value')}</option>
+                    {dateFields.map((df) => (
+                      <option key={df.key} value={df.key}>
+                        {df.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                );
+              }
+
+              if (field.type === 'entity_ref') {
+                return (
+                  <EntityRefSelector
+                    key={field.key}
+                    label={field.label}
+                    value={(step.config ?? {})[field.key]}
+                    options={contextVariables}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                  />
+                );
+              }
+
+              if (field.type === 'select') {
+                // For offset_operator, use operations from API if available
+                const fieldOptions =
+                  field.key === 'offset_operator' && operations.length > 0
+                    ? operations.map((op) => ({
+                        label: op.label,
+                        value: op.key,
+                      }))
+                    : field.options;
+
+                return (
+                  <SelectField
+                    key={field.key}
+                    customSelector
+                    label={field.label}
+                    value={(step.config ?? {})[field.key]}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  >
+                    <option value="">{t('select_value')}</option>
+                    {fieldOptions?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                );
+              }
+
               return (
-                <SelectField
+                <InputField
                   key={field.key}
-                  customSelector
                   label={field.label}
+                  element={field.type === 'textarea' ? 'textarea' : 'input'}
                   value={(step.config ?? {})[field.key]}
+                  placeholder={field.placeholder}
                   onValueChange={(value) =>
                     onChange({
                       ...step,
@@ -231,132 +377,27 @@ export function PropertiesPanel({
                     })
                   }
                   errorMessage={stepErrors(field.key)}
-                >
-                  <option value="">{t('select_value')}</option>
-                  {conditionFields.map((cf) => (
-                    <option key={cf.key} value={cf.key}>
-                      {cf.label}
-                    </option>
-                  ))}
-                </SelectField>
-              );
-            }
-
-            if (field.type === 'operator') {
-              return (
-                <SelectField
-                  key={field.key}
-                  customSelector
-                  label={field.label}
-                  value={(step.config ?? {})[field.key]}
-                  onValueChange={(value) =>
-                    onChange({
-                      ...step,
-                      config: { ...step.config, [field.key]: value },
-                    })
-                  }
-                  errorMessage={stepErrors(field.key)}
-                >
-                  <option value="">{t('select_value')}</option>
-                  {operations.map((op) => (
-                    <option key={op.key} value={op.key}>
-                      {op.label}
-                    </option>
-                  ))}
-                </SelectField>
-              );
-            }
-
-            if (field.type === 'date_field') {
-              return (
-                <SelectField
-                  key={field.key}
-                  customSelector
-                  label={field.label}
-                  value={(step.config ?? {})[field.key]}
-                  onValueChange={(value) =>
-                    onChange({
-                      ...step,
-                      config: { ...step.config, [field.key]: value },
-                    })
-                  }
-                  errorMessage={stepErrors(field.key)}
-                >
-                  <option value="">{t('select_value')}</option>
-                  {dateFields.map((df) => (
-                    <option key={df.key} value={df.key}>
-                      {df.label}
-                    </option>
-                  ))}
-                </SelectField>
-              );
-            }
-
-            if (field.type === 'entity_ref') {
-              return (
-                <EntityRefSelector
-                  key={field.key}
-                  label={field.label}
-                  value={(step.config ?? {})[field.key]}
-                  options={contextVariables}
-                  onValueChange={(value) =>
-                    onChange({
-                      ...step,
-                      config: { ...step.config, [field.key]: value },
-                    })
-                  }
                 />
               );
-            }
+            })}
+          </div>
+        )
+      )}
 
-            if (field.type === 'select') {
-              // For offset_operator, use operations from API if available
-              const fieldOptions =
-                field.key === 'offset_operator' && operations.length > 0
-                  ? operations.map((op) => ({ label: op.label, value: op.key }))
-                  : field.options;
-
-              return (
-                <SelectField
-                  key={field.key}
-                  customSelector
-                  label={field.label}
-                  value={(step.config ?? {})[field.key]}
-                  onValueChange={(value) =>
-                    onChange({
-                      ...step,
-                      config: { ...step.config, [field.key]: value },
-                    })
-                  }
-                  errorMessage={stepErrors(field.key)}
-                >
-                  <option value="">{t('select_value')}</option>
-                  {fieldOptions?.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </SelectField>
-              );
-            }
-
-            return (
-              <InputField
-                key={field.key}
-                label={field.label}
-                element={field.type === 'textarea' ? 'textarea' : 'input'}
-                value={(step.config ?? {})[field.key]}
-                placeholder={field.placeholder}
-                onValueChange={(value) =>
-                  onChange({
-                    ...step,
-                    config: { ...step.config, [field.key]: value },
-                  })
-                }
-                errorMessage={stepErrors(field.key)}
-              />
-            );
-          })}
+      {/* Restart warning for end steps */}
+      {step.kind === 'end' && (step.config ?? {}).restart === 'true' && (
+        <div
+          className="flex items-start gap-2 rounded-lg border p-3 text-xs"
+          style={{
+            backgroundColor: '#EFF6FF',
+            borderColor: '#BFDBFE',
+            color: '#1E40AF',
+          }}
+        >
+          <MdInfoOutline size={14} className="mt-0.5 shrink-0" />
+          <span>
+            {t('restart_workflow_warning')}
+          </span>
         </div>
       )}
 

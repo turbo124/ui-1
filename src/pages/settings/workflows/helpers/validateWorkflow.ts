@@ -126,6 +126,13 @@ export function validateWorkflow(
     const config = step.config ?? {};
 
     paramsSchema.forEach((field) => {
+      if (
+        field.visible_when &&
+        config[field.visible_when.field] !== field.visible_when.value
+      ) {
+        return;
+      }
+
       if (field.required && !config[field.key]) {
         issues.push({
           id: `${step.id}-${field.key}`,
