@@ -32,6 +32,7 @@ import { Index } from '$app/pages/Index';
 import { TestingRoute } from '$app/components/TestingRoute';
 import { TestingPage } from '$app/components/TestingPage';
 import { activityRoutes } from '$app/pages/activities/routes';
+import { workflowRoutes } from '$app/pages/workflows/routes';
 import { Guard } from './guards/Guard';
 import { permission } from './guards/guards/permission';
 import { documentsRoutes } from '$app/pages/documents/routes';
@@ -70,6 +71,7 @@ export const routes = (
       {documentsRoutes}
       {settingsRoutes}
       {activityRoutes}
+      {workflowRoutes}
       <Route element={<TestingRoute />}>
         <Route path="/testing" element={<TestingPage />} />
       </Route>

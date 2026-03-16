@@ -257,6 +257,14 @@ export const keys = {
     path: '/api/docuninja/login',
     dependencies: [],
   },
+  workflows: {
+    path: '/api/v1/workflows',
+    dependencies: [],
+  },
+  workflow_runs: {
+    path: '/api/v1/workflow_runs',
+    dependencies: [],
+  },
 };
 
 export type RefetchKey = keyof typeof keys;

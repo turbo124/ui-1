@@ -23,6 +23,7 @@ import { ChartLine } from '$app/components/icons/ChartLine';
 import { atom, useAtom } from 'jotai';
 import { useCurrentCompanyUser } from '$app/common/hooks/useCurrentCompanyUser';
 import { Gear } from '$app/components/icons/Gear';
+import { AccountTree } from '$app/components/icons/AccountTree';
 import { useCurrentCompany } from '$app/common/hooks/useCurrentCompany';
 import { File } from 'react-feather';
 import collect from 'collect.js';
@@ -327,6 +328,19 @@ export function useNavigation() {
           },
         },
       ],
+    },
+    {
+      name: t('workflows'),
+      href: '/workflows',
+      icon: AccountTree,
+      visible:
+        (companyUser?.is_admin || companyUser?.is_owner) ?? false,
+      rightButton: {
+        icon: Plus,
+        to: '/workflows/create',
+        label: t('new_workflow'),
+        visible: (companyUser?.is_admin || companyUser?.is_owner) ?? false,
+      },
     },
     {
       name: t('settings'),

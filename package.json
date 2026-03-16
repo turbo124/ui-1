@@ -44,6 +44,7 @@
     "@tiptap/react": "^3.11.1",
     "@tiptap/starter-kit": "^3.11.1",
     "@types/js-beautify": "^1.14.3",
+    "@xyflow/react": "^12.10.1",
     "antd": "^5.24.3",
     "array-move": "^4.0.0",
     "axios": "^1.8.3",
