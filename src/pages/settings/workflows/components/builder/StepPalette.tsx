@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import { WorkflowActionMetadata } from '../../types/workflow';
 import { WorkflowIcon } from '../shared/WorkflowIcon';
-import { MdWidgets, MdDragIndicator } from 'react-icons/md';
+import { MdWidgets } from 'react-icons/md';
 
 const kindColor: Record<string, string> = {
   trigger: '#3B82F6',
@@ -44,10 +44,10 @@ export function StepPalette({
             className="text-sm font-semibold"
             style={{ color: colors.$3 }}
           >
-            {t('step_palette')}
+            {t('steps')}
           </h3>
           <p className="text-xs" style={{ color: colors.$3, opacity: 0.5 }}>
-            {t('drag_or_click_step')}
+            {t('add_step')}
           </p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function StepPalette({
             className="text-xs font-semibold uppercase tracking-wider"
             style={{ color: colors.$3, opacity: 0.4 }}
           >
-            {group}
+            {t(group.toLowerCase())}
           </h4>
 
           <div className="space-y-1">
@@ -68,14 +68,6 @@ export function StepPalette({
                 <button
                   key={action.id}
                   type="button"
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer.setData(
-                      'application/invoiceninja-workflow-step',
-                      JSON.stringify(action)
-                    );
-                    event.dataTransfer.effectAllowed = 'move';
-                  }}
                   onClick={() => onAddStep(action)}
                   className="flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition hover:shadow-sm"
                   style={{ borderColor: colors.$4 }}
@@ -91,22 +83,17 @@ export function StepPalette({
                       className="text-xs font-medium truncate"
                       style={{ color: colors.$3 }}
                     >
-                      {action.name}
+                      {t(action.name)}
                     </div>
                     {action.description && (
                       <div
                         className="truncate text-[11px]"
                         style={{ color: colors.$3, opacity: 0.5 }}
                       >
-                        {action.description}
+                        {t(action.description)}
                       </div>
                     )}
                   </div>
-                  <MdDragIndicator
-                    size={14}
-                    className="ml-auto shrink-0"
-                    style={{ color: colors.$3, opacity: 0.25 }}
-                  />
                 </button>
               ))}
           </div>

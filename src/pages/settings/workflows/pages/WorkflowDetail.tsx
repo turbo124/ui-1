@@ -20,7 +20,7 @@ import {
   MdDelete,
   MdRestore,
 } from 'react-icons/md';
-import { buildWaitDelaySubtitle } from '../helpers/stepToNode';
+import { buildWaitDelaySubtitle, buildWaitEventSubtitle } from '../helpers/stepToNode';
 import { WorkflowActionMetadata, WorkflowStep } from '../types/workflow';
 
 dayjs.extend(relativeTime);
@@ -58,6 +58,10 @@ function stepSubtitle(
       return `${triggerEntity} ${triggerEvent.replace(/_/g, ' ')}`;
     }
     return 'Trigger';
+  }
+
+  if (step.kind === 'wait_event') {
+    return buildWaitEventSubtitle(step.config ?? {});
   }
 
   if (step.kind === 'wait_delay') {

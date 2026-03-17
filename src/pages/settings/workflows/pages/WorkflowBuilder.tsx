@@ -364,15 +364,6 @@ function WorkflowBuilderInner({
                 builder.setSelectedNodeId(node.id);
                 setInsertEdgeId(null);
               }}
-              onDropStep={({ x, y, actionId }) => {
-                const action = actions.find(
-                  (entry) => entry.id === actionId
-                );
-
-                if (action) {
-                  builder.addStep(action, { x, y });
-                }
-              }}
               onEdgeInsertClick={handleEdgeInsertClick}
             />
 
@@ -427,12 +418,27 @@ function WorkflowBuilderInner({
             {/* Resize handle */}
             <div
               onMouseDown={handleResizeStart}
-              className="flex w-2 flex-shrink-0 cursor-col-resize items-center justify-center"
-              style={{ marginRight: '4px' }}
+              className="flex w-3 flex-shrink-0 cursor-col-resize justify-center self-stretch"
+              onMouseEnter={(e) => {
+                const line = e.currentTarget.firstElementChild as HTMLElement;
+                if (line) {
+                  line.style.backgroundColor = '#3B82F6';
+                  line.style.width = '2px';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isResizing.current) {
+                  const line = e.currentTarget.firstElementChild as HTMLElement;
+                  if (line) {
+                    line.style.backgroundColor = '#94a3b8';
+                    line.style.width = '1px';
+                  }
+                }
+              }}
             >
               <div
-                className="h-8 w-0.5 rounded-full"
-                style={{ backgroundColor: colors.$4 }}
+                className="rounded-full transition-all duration-150"
+                style={{ backgroundColor: '#94a3b8', width: '1px', minHeight: '100%' }}
               />
             </div>
           <div className="min-w-0 flex-1 space-y-3">
@@ -449,7 +455,7 @@ function WorkflowBuilderInner({
                     triggers={triggers}
                     conditionFields={conditionFields}
                     errors={errors}
-                    readOnly={!isNew}
+                    readOnly={false}
                     onChange={(updated) => {
                       setErrors(undefined);
                       builder.setTrigger(updated.trigger);
@@ -476,6 +482,7 @@ function WorkflowBuilderInner({
                     conditionFields={conditionFields}
                     dateFields={dateFields}
                     operations={operations}
+                    triggerEntity={builder.trigger?.entity}
                   />
                 )}
 

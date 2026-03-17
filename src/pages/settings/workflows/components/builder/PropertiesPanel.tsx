@@ -1,4 +1,5 @@
 import { InputField, SelectField } from '$app/components/forms';
+import { UserSelector } from '$app/components/users/UserSelector';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import {
@@ -12,6 +13,7 @@ import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { useContextVariables } from '../../hooks/useContextVariables';
 import { EntityRefSelector } from '../shared/EntityRefSelector';
 import { SendEmailPanel } from './SendEmailPanel';
+import { WebhookPanel } from './WebhookPanel';
 import { Edge } from '@xyflow/react';
 import {
   MdArrowUpward,
@@ -33,6 +35,7 @@ export function PropertiesPanel({
   conditionFields,
   dateFields,
   operations,
+  triggerEntity,
 }: {
   step?: WorkflowStep;
   actions: WorkflowActionMetadata[];
@@ -45,6 +48,7 @@ export function PropertiesPanel({
   conditionFields: ConditionFieldDef[];
   dateFields: WorkflowDateField[];
   operations: WorkflowOperation[];
+  triggerEntity?: string;
 }) {
   const [t] = useTranslation();
   const colors = useColorScheme();
@@ -132,16 +136,16 @@ export function PropertiesPanel({
                 color: getKindColor(step.kind),
               }}
             >
-              {(step.kind ?? '').replace(/_/g, ' ')}
+              {t(step.kind ?? '')}
             </span>
             {action && (
               <span className="text-xs" style={{ color: colors.$3, opacity: 0.5 }}>
-                {action.name}
+                {t(action.name)}
               </span>
             )}
           </div>
 
-          {step.kind !== 'trigger' && (
+          {step.kind !== 'trigger' && step.kind !== 'end' && (
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -212,7 +216,14 @@ export function PropertiesPanel({
           step={step}
           action={action}
           errors={stepErrors}
-          contextVariables={contextVariables}
+          triggerEntity={triggerEntity}
+          onChange={onChange}
+        />
+      ) : step.action_id === 'send_webhook' && action ? (
+        <WebhookPanel
+          step={step}
+          action={action}
+          errors={stepErrors}
           onChange={onChange}
         />
       ) : (
@@ -237,12 +248,28 @@ export function PropertiesPanel({
                 return null;
               }
 
+              // For notify_user, hide the "to" field and auto-default to first option
+              if (
+                step.action_id === 'notify_user' &&
+                field.key === 'to' &&
+                field.options?.length
+              ) {
+                const first = field.options[0].value;
+                if ((step.config ?? {})[field.key] !== first) {
+                  onChange({
+                    ...step,
+                    config: { ...step.config, [field.key]: first },
+                  });
+                }
+                return null;
+              }
+
               if (field.type === 'entity_field') {
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
-                    label={field.label}
+                    label={t(field.label)}
                     value={(step.config ?? {})[field.key]}
                     onValueChange={(value) =>
                       onChange({
@@ -255,7 +282,7 @@ export function PropertiesPanel({
                     <option value="">{t('select_value')}</option>
                     {conditionFields.map((cf) => (
                       <option key={cf.key} value={cf.key}>
-                        {cf.label}
+                        {t(cf.label)}
                       </option>
                     ))}
                   </SelectField>
@@ -267,7 +294,7 @@ export function PropertiesPanel({
                   <SelectField
                     key={field.key}
                     customSelector
-                    label={field.label}
+                    label={t(field.label)}
                     value={(step.config ?? {})[field.key]}
                     onValueChange={(value) =>
                       onChange({
@@ -280,7 +307,7 @@ export function PropertiesPanel({
                     <option value="">{t('select_value')}</option>
                     {operations.map((op) => (
                       <option key={op.key} value={op.key}>
-                        {op.label}
+                        {t(op.label)}
                       </option>
                     ))}
                   </SelectField>
@@ -292,7 +319,7 @@ export function PropertiesPanel({
                   <SelectField
                     key={field.key}
                     customSelector
-                    label={field.label}
+                    label={t(field.label)}
                     value={(step.config ?? {})[field.key]}
                     onValueChange={(value) =>
                       onChange({
@@ -305,18 +332,48 @@ export function PropertiesPanel({
                     <option value="">{t('select_value')}</option>
                     {dateFields.map((df) => (
                       <option key={df.key} value={df.key}>
-                        {df.label}
+                        {t(df.label)}
                       </option>
                     ))}
                   </SelectField>
                 );
               }
 
-              if (field.type === 'entity_ref') {
+              if (field.type === 'user_select') {
+                // Only show user selector when "to" is "specific_user"
+                const hasToField = fields.some((f) => f.key === 'to');
+                if (hasToField && (step.config ?? {}).to !== 'specific_user') {
+                  return null;
+                }
+
+                return (
+                  <UserSelector
+                    key={field.key}
+                    inputLabel={t(field.label)}
+                    value={(step.config ?? {})[field.key]}
+                    onChange={(user) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: user.id },
+                      })
+                    }
+                    clearButton={Boolean((step.config ?? {})[field.key])}
+                    onClearButtonClick={() =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: '' },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  />
+                );
+              }
+
+              if (field.type === 'entity_ref' || field.type === 'entity_reference') {
                 return (
                   <EntityRefSelector
                     key={field.key}
-                    label={field.label}
+                    label={t(field.label)}
                     value={(step.config ?? {})[field.key]}
                     options={contextVariables}
                     onValueChange={(value) =>
@@ -339,11 +396,23 @@ export function PropertiesPanel({
                       }))
                     : field.options;
 
+                // Single option — auto-select it and hide the field
+                if (fieldOptions?.length === 1) {
+                  const only = fieldOptions[0].value;
+                  if ((step.config ?? {})[field.key] !== only) {
+                    onChange({
+                      ...step,
+                      config: { ...step.config, [field.key]: only },
+                    });
+                  }
+                  return null;
+                }
+
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
-                    label={field.label}
+                    label={t(field.label)}
                     value={(step.config ?? {})[field.key]}
                     onValueChange={(value) =>
                       onChange({
@@ -356,17 +425,47 @@ export function PropertiesPanel({
                     <option value="">{t('select_value')}</option>
                     {fieldOptions?.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.label)}
                       </option>
                     ))}
                   </SelectField>
                 );
               }
 
+              if (field.type === 'operation_select') {
+                // Group operations by category for a cleaner dropdown
+                return (
+                  <SelectField
+                    key={field.key}
+                    customSelector
+                    label={t(field.label)}
+                    value={(step.config ?? {})[field.key]}
+                    onValueChange={(value) =>
+                      onChange({
+                        ...step,
+                        config: { ...step.config, [field.key]: value },
+                      })
+                    }
+                    errorMessage={stepErrors(field.key)}
+                  >
+                    <option value="">{t('select_value')}</option>
+                    {operations.map((op) => (
+                      <option key={op.key} value={op.key}>
+                        {t(op.label)}
+                      </option>
+                    ))}
+                  </SelectField>
+                );
+              }
+
+              if (field.type === 'key_value') {
+                return null; // Handled by dedicated panels (e.g. WebhookPanel)
+              }
+
               return (
                 <InputField
                   key={field.key}
-                  label={field.label}
+                  label={t(field.label)}
                   element={field.type === 'textarea' ? 'textarea' : 'input'}
                   value={(step.config ?? {})[field.key]}
                   placeholder={field.placeholder}

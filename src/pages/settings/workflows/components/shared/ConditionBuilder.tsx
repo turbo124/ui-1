@@ -5,28 +5,28 @@ import { ConditionFieldDef, WorkflowCondition } from '../../types/workflow';
 import { MdClose } from 'react-icons/md';
 
 const stringOperators = [
-  { label: 'Equals', value: 'eq' },
-  { label: 'Not equals', value: 'neq' },
-  { label: 'Contains', value: 'contains' },
-  { label: 'Is empty', value: 'empty' },
-  { label: 'Is not empty', value: 'not_empty' },
+  { label: 'equals', value: 'eq' },
+  { label: 'not_equals', value: 'neq' },
+  { label: 'contains', value: 'contains' },
+  { label: 'is_empty', value: 'empty' },
+  { label: 'is_not_empty', value: 'not_empty' },
 ];
 
 const numberOperators = [
-  { label: 'Equals', value: 'eq' },
-  { label: 'Not equals', value: 'neq' },
-  { label: 'Greater than', value: 'gt' },
-  { label: 'Less than', value: 'lt' },
-  { label: 'Greater than or equal', value: 'gte' },
-  { label: 'Less than or equal', value: 'lte' },
+  { label: 'equals', value: 'eq' },
+  { label: 'not_equals', value: 'neq' },
+  { label: 'greater_than', value: 'gt' },
+  { label: 'less_than', value: 'lt' },
+  { label: 'greater_than_or_equal', value: 'gte' },
+  { label: 'less_than_or_equal', value: 'lte' },
 ];
 
 const dateOperators = [
-  { label: 'Is more than', value: 'date_gt' },
-  { label: 'Is less than', value: 'date_lt' },
-  { label: 'Is exactly', value: 'date_eq' },
-  { label: 'Has passed', value: 'date_past' },
-  { label: 'Is in the future', value: 'date_future' },
+  { label: 'after', value: 'date_gt' },
+  { label: 'before', value: 'date_lt' },
+  { label: 'on', value: 'date_eq' },
+  { label: 'has_passed', value: 'date_past' },
+  { label: 'is_in_the_future', value: 'date_future' },
 ];
 
 const dateUnits = [
@@ -77,7 +77,7 @@ export function ConditionBuilder({
           className="text-sm font-semibold"
           style={{ color: colors.$3 }}
         >
-          {t('conditions')}
+          {t('condition')}
         </h4>
         <div className="flex overflow-hidden rounded-md border" style={{ borderColor: colors.$4 }}>
           <button
@@ -109,8 +109,8 @@ export function ConditionBuilder({
         const fieldDef = getFieldDef(condition.field);
         const fieldType = fieldDef?.type ?? 'string';
         const operators = getOperatorsForType(fieldType);
-        const isDateOperator = condition.operator.startsWith('date_');
-        const needsValue = !noValueOperators.includes(condition.operator);
+        const isDateOperator = (condition.operator ?? '').startsWith('date_');
+        const needsValue = !noValueOperators.includes(condition.operator ?? '');
 
         return (
           <div
@@ -151,17 +151,19 @@ export function ConditionBuilder({
                 customSelector
                 label={t('field')}
                 value={condition.field}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  const newFieldType = getFieldDef(value)?.type ?? 'string';
+                  const firstOperator = getOperatorsForType(newFieldType)[0]?.value ?? '';
+
                   onChange(
                     conditions.map((entry) =>
                       entry.id === condition.id
-                        ? { ...entry, field: value, operator: '', value: '' }
+                        ? { ...entry, field: value, operator: firstOperator, value: '' }
                         : entry
                     )
-                  )
-                }
+                  );
+                }}
               >
-                <option value="">{t('select_field')}</option>
                 {fields.map((field) => (
                   <option key={field.key} value={field.key}>
                     {field.label}
@@ -184,10 +186,9 @@ export function ConditionBuilder({
                     )
                   }
                 >
-                  <option value="">{t('select_operator')}</option>
                   {operators.map((operator) => (
                     <option key={operator.value} value={operator.value}>
-                      {operator.label}
+                      {t(operator.label)}
                     </option>
                   ))}
                 </SelectField>
@@ -228,7 +229,7 @@ export function ConditionBuilder({
                       >
                         {dateUnits.map((unit) => (
                           <option key={unit.value} value={unit.value}>
-                            {unit.label}
+                            {t(unit.label)}
                           </option>
                         ))}
                       </SelectField>
@@ -244,19 +245,23 @@ export function ConditionBuilder({
       <Button
         type="secondary"
         behavior="button"
-        onClick={() =>
+        onClick={() => {
+          const defaultField = fields[0]?.key ?? '';
+          const defaultFieldType = fields[0]?.type ?? 'string';
+          const defaultOperator = getOperatorsForType(defaultFieldType)[0]?.value ?? '';
+
           onChange([
             ...conditions,
             {
               id: `condition-${Date.now()}`,
-              field: '',
-              operator: '',
+              field: defaultField,
+              operator: defaultOperator,
               value: '',
             },
-          ])
-        }
+          ]);
+        }}
       >
-        {t('add_condition')}
+        {t('add')}
       </Button>
     </div>
   );

@@ -92,11 +92,6 @@ export function EndNode({ data, selected }: NodeProps<any>) {
         </div>
       )}
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ ...handleStyle, background: data.color || '#64748b' }}
-      />
     </div>
   );
 }

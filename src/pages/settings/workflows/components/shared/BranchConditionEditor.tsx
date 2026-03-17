@@ -4,28 +4,28 @@ import { useColorScheme } from '$app/common/colors';
 import { ConditionFieldDef } from '../../types/workflow';
 
 const stringOperators = [
-  { label: 'Equals', value: 'eq' },
-  { label: 'Not equals', value: 'neq' },
-  { label: 'Contains', value: 'contains' },
-  { label: 'Is empty', value: 'empty' },
-  { label: 'Is not empty', value: 'not_empty' },
+  { label: 'equals', value: 'eq' },
+  { label: 'not_equals', value: 'neq' },
+  { label: 'contains', value: 'contains' },
+  { label: 'is_empty', value: 'empty' },
+  { label: 'is_not_empty', value: 'not_empty' },
 ];
 
 const numberOperators = [
-  { label: '= Equal to', value: 'eq' },
-  { label: '!= Not equal to', value: 'neq' },
-  { label: '> Greater than', value: 'gt' },
-  { label: '< Less than', value: 'lt' },
-  { label: '>= Greater than or equal to', value: 'gte' },
-  { label: '<= Less than or equal to', value: 'lte' },
+  { label: 'equals', value: 'eq' },
+  { label: 'not_equals', value: 'neq' },
+  { label: 'greater_than', value: 'gt' },
+  { label: 'less_than', value: 'lt' },
+  { label: 'greater_than_or_equal', value: 'gte' },
+  { label: 'less_than_or_equal', value: 'lte' },
 ];
 
 const dateOperators = [
-  { label: 'After', value: 'date_gt' },
-  { label: 'Before', value: 'date_lt' },
-  { label: 'On', value: 'date_eq' },
-  { label: 'Has passed', value: 'date_past' },
-  { label: 'Is in the future', value: 'date_future' },
+  { label: 'after', value: 'date_gt' },
+  { label: 'before', value: 'date_lt' },
+  { label: 'on', value: 'date_eq' },
+  { label: 'has_passed', value: 'date_past' },
+  { label: 'is_in_the_future', value: 'date_future' },
 ];
 
 const dateUnits = [
@@ -81,7 +81,7 @@ export function BranchConditionEditor({
           className="text-xs font-semibold uppercase tracking-wider"
           style={{ color: colors.$3, opacity: 0.5 }}
         >
-          {t('condition')}
+          {t('filter')}
         </div>
         {selectedFieldDef && (
           <span
@@ -110,16 +110,18 @@ export function BranchConditionEditor({
             <SelectField
               customSelector
               value={conditionField}
-              onValueChange={(value) =>
+              onValueChange={(value) => {
+                const newFieldType = conditionFields.find((f) => f.key === value)?.type ?? 'string';
+                const firstOperator = getOperatorsForType(newFieldType)[0]?.value ?? '';
+
                 onChange({
                   condition_field: value,
-                  condition_operator: '',
+                  condition_operator: firstOperator,
                   condition_value: '',
                   condition_unit: 'days',
-                })
-              }
+                });
+              }}
             >
-              <option value="">{t('select_field')}</option>
               {conditionFields.map((field) => (
                 <option key={field.key} value={field.key}>
                   {field.label}
@@ -140,10 +142,9 @@ export function BranchConditionEditor({
               })
             }
           >
-            <option value="">{t('select_operator')}</option>
             {operators.map((op) => (
               <option key={op.value} value={op.value}>
-                {op.label}
+                {t(op.label)}
               </option>
             ))}
           </SelectField>
@@ -153,7 +154,7 @@ export function BranchConditionEditor({
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <InputField
-                label={isDateOperator ? `${t('value')} (${conditionUnit || 'days'})` : undefined}
+                label={isDateOperator ? `${t('value')} (${t(conditionUnit || 'days')})` : undefined}
                 value={conditionValue}
                 placeholder={isDateOperator ? '3' : fieldType === 'number' ? '0' : t('enter_value')}
                 onValueChange={(value) => onChange({ condition_value: value })}
@@ -169,7 +170,7 @@ export function BranchConditionEditor({
                 >
                   {dateUnits.map((unit) => (
                     <option key={unit.value} value={unit.value}>
-                      {unit.label}
+                      {t(unit.label)}
                     </option>
                   ))}
                 </SelectField>
@@ -187,11 +188,11 @@ export function BranchConditionEditor({
         >
           <span style={{ opacity: 0.6 }}>
             {selectedFieldDef?.label ?? conditionField}{' '}
-            {operators.find((o) => o.value === conditionOperator)?.label.toLowerCase()}
+            {t(operators.find((o) => o.value === conditionOperator)?.label ?? '')}
             {needsValue && conditionValue && (
               <>
                 {' '}{conditionValue}
-                {isDateOperator && ` ${conditionUnit || 'days'}`}
+                {isDateOperator && ` ${t(conditionUnit || 'days')}`}
               </>
             )}
           </span>

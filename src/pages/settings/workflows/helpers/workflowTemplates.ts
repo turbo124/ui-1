@@ -22,8 +22,22 @@ export function createBlankWorkflow(): WorkflowDefinition {
         name: 'Trigger',
         config: {},
       },
+      {
+        id: 'end',
+        kind: 'end',
+        action_id: 'end',
+        name: 'End Workflow',
+        config: { end_status: 'completed' },
+      },
     ],
-    edges: [],
+    edges: [
+      {
+        id: 'edge-trigger-end',
+        source: 'trigger',
+        target: 'end',
+        type: 'workflow',
+      },
+    ],
     runs_count: 0,
   };
 }

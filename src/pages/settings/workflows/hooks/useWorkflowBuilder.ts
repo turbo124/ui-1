@@ -8,7 +8,7 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildWaitDelaySubtitle, normalizeEdges, stepToNodes } from '../helpers/stepToNode';
+import { buildWaitDelaySubtitle, buildWaitEventSubtitle, normalizeEdges, stepToNodes } from '../helpers/stepToNode';
 import { validateWorkflow } from '../helpers/validateWorkflow';
 import {
   BuilderNode,
@@ -115,10 +115,36 @@ export function useWorkflowBuilder(
       current.map((n) => {
         if (n.id !== updated.id) return n;
 
-        const subtitle =
-          updated.kind === 'wait_delay'
-            ? buildWaitDelaySubtitle(updated.config ?? {}, dateFields)
-            : n.data.subtitle;
+        const config = updated.config ?? {};
+        const action = actions.find((a) => a.id === updated.action_id);
+
+        let subtitle: string;
+        switch (updated.kind) {
+          case 'wait_delay':
+            subtitle = buildWaitDelaySubtitle(config, dateFields);
+            break;
+          case 'wait_event':
+            subtitle = buildWaitEventSubtitle(config);
+            break;
+          case 'end': {
+            const isRestart = config.restart === 'true';
+            subtitle = isRestart ? 'Loops back to start' : action?.name ?? 'End';
+            break;
+          }
+          default:
+            subtitle = action?.name ?? n.data.subtitle ?? updated.kind;
+            break;
+        }
+
+        // Derive color and icon from config changes (e.g. end step result/restart)
+        const isRestart = updated.kind === 'end' && config.restart === 'true';
+        const result = config.end_status ?? config.result;
+        const color = isRestart
+          ? '#3B82F6'
+          : updated.kind === 'end' && result === 'lost'
+            ? '#EF4444'
+            : n.data.color;
+        const icon = isRestart ? 'replay' : action?.icon ?? n.data.icon;
 
         return {
           ...n,
@@ -126,73 +152,14 @@ export function useWorkflowBuilder(
             ...n.data,
             label: updated.name,
             subtitle,
+            color,
+            icon,
+            restart: isRestart || undefined,
           },
         };
       })
     );
-  }, [dateFields]);
-
-  const addStep = useCallback(
-    (
-      action: WorkflowActionMetadata,
-      position: { x: number; y: number },
-      options?: { parentId?: string }
-    ) => {
-      const newId = `${action.id}-${Date.now()}`;
-
-      const newNode: BuilderNode = {
-        id: newId,
-        type: action.type,
-        position,
-        data: {
-          label: action.name,
-          subtitle: action.description,
-          kind: action.type,
-          color:
-            action.type === 'action'
-              ? '#10B981'
-              : action.type === 'branch'
-                ? '#8B5CF6'
-                : action.type === 'end'
-                  ? '#6B7280'
-                  : '#F59E0B',
-          icon: action.icon,
-          status: 'valid',
-        },
-      };
-
-      setNodes((current) => [...current, newNode]);
-
-      if (options?.parentId) {
-        // If parent is a branch node, use the "true" handle for the linear chain
-        const parentStep = steps.find((s) => s.id === options.parentId);
-        const sourceHandle = parentStep?.kind === 'branch' ? 'true' : undefined;
-
-        const newEdge: Edge = {
-          id: `${options.parentId}-${newId}-${Date.now()}`,
-          source: options.parentId,
-          sourceHandle,
-          target: newId,
-          type: 'workflow',
-        };
-        setEdges((current) => [...current, newEdge]);
-      }
-
-      const newStep: WorkflowStep = {
-        id: newId,
-        kind: action.type,
-        action_id: action.id,
-        name: action.name,
-        config: {},
-      };
-
-      setSteps((current) => [...current, newStep]);
-      setSelectedNodeId(newId);
-
-      return newId;
-    },
-    []
-  );
+  }, [actions, dateFields]);
 
   const insertStepOnEdge = useCallback(
     (
@@ -201,6 +168,9 @@ export function useWorkflowBuilder(
     ) => {
       const edge = edges.find((e) => e.id === edgeId);
       if (!edge) return;
+
+      // Prevent inserting an End node in the middle of a chain
+      if (action.type === 'end') return;
 
       const sourceNode = nodes.find((n) => n.id === edge.source);
       const targetNode = nodes.find((n) => n.id === edge.target);
@@ -225,9 +195,7 @@ export function useWorkflowBuilder(
               ? '#10B981'
               : action.type === 'branch'
                 ? '#8B5CF6'
-                : action.type === 'end'
-                  ? '#6B7280'
-                  : '#F59E0B',
+                : '#F59E0B',
           icon: action.icon,
           status: 'valid',
         },
@@ -266,10 +234,117 @@ export function useWorkflowBuilder(
     [edges, nodes]
   );
 
+  const addStep = useCallback(
+    (
+      action: WorkflowActionMetadata,
+      position: { x: number; y: number },
+      options?: { parentId?: string }
+    ) => {
+      // If the requested parent is an End node, insert before it instead
+      const parentStep = options?.parentId
+        ? steps.find((s) => s.id === options.parentId)
+        : undefined;
+
+      if (parentStep?.kind === 'end') {
+        const incomingEdge = edges.find(
+          (e) => e.target === parentStep.id && e.sourceHandle !== 'false'
+        );
+        if (incomingEdge) {
+          const edgeToSplit = edges.find((e) => e.id === incomingEdge.id);
+          if (edgeToSplit) {
+            insertStepOnEdge(edgeToSplit.id, action);
+            return;
+          }
+        }
+      }
+
+      const newId = `${action.id}-${Date.now()}`;
+
+      const newNode: BuilderNode = {
+        id: newId,
+        type: action.type,
+        position,
+        data: {
+          label: action.name,
+          subtitle: action.description,
+          kind: action.type,
+          color:
+            action.type === 'action'
+              ? '#10B981'
+              : action.type === 'branch'
+                ? '#8B5CF6'
+                : action.type === 'end'
+                  ? '#6B7280'
+                  : '#F59E0B',
+          icon: action.icon,
+          status: 'valid',
+        },
+      };
+
+      setNodes((current) => [...current, newNode]);
+
+      if (options?.parentId) {
+        // If parent is a branch node, use the "true" handle for the linear chain
+        const pStep = steps.find((s) => s.id === options.parentId);
+        const sourceHandle = pStep?.kind === 'branch' ? 'true' : undefined;
+
+        // If parent currently connects to an End node, splice in before the End
+        const existingEdgeToEnd = edges.find(
+          (e) =>
+            e.source === options!.parentId &&
+            e.sourceHandle !== 'false' &&
+            steps.find((s) => s.id === e.target)?.kind === 'end'
+        );
+
+        if (existingEdgeToEnd) {
+          setEdges((current) => [
+            ...current.filter((e) => e.id !== existingEdgeToEnd.id),
+            {
+              id: `${options!.parentId}-${newId}-${Date.now()}`,
+              source: options!.parentId!,
+              sourceHandle,
+              target: newId,
+              type: 'workflow',
+            },
+            {
+              id: `${newId}-${existingEdgeToEnd.target}-${Date.now()}`,
+              source: newId,
+              target: existingEdgeToEnd.target,
+              type: 'workflow',
+            },
+          ]);
+        } else {
+          const newEdge: Edge = {
+            id: `${options.parentId}-${newId}-${Date.now()}`,
+            source: options.parentId,
+            sourceHandle,
+            target: newId,
+            type: 'workflow',
+          };
+          setEdges((current) => [...current, newEdge]);
+        }
+      }
+
+      const newStep: WorkflowStep = {
+        id: newId,
+        kind: action.type,
+        action_id: action.id,
+        name: action.name,
+        config: {},
+      };
+
+      setSteps((current) => [...current, newStep]);
+      setSelectedNodeId(newId);
+
+      return newId;
+    },
+    [steps, edges, insertStepOnEdge]
+  );
+
   const removeStep = useCallback(
     (stepId: string) => {
       const step = steps.find((s) => s.id === stepId);
-      if (!step || step.kind === 'trigger') return;
+      if (!step || step.kind === 'trigger' || step.kind === 'end') return;
 
       // Find parent and children so we can reconnect them
       const incomingEdges = edges.filter((e) => e.target === stepId);
@@ -320,6 +395,10 @@ export function useWorkflowBuilder(
 
   const moveStep = useCallback(
     (stepId: string, direction: 'up' | 'down') => {
+      // End nodes cannot be moved
+      const movingStep = steps.find((s) => s.id === stepId);
+      if (movingStep?.kind === 'end') return;
+
       // Only consider linear (non-GOTO) edges for movement
       const linearEdges = edges.filter((e) => e.sourceHandle !== 'false');
 
@@ -518,6 +597,10 @@ export function useWorkflowBuilder(
       }
     },
     onConnect: (connection: Connection) => {
+      // Prevent connecting from an End node — it must always be the last step
+      const sourceStep = steps.find((s) => s.id === connection.source);
+      if (sourceStep?.kind === 'end') return;
+
       setEdges((current) =>
         addEdge({ ...connection, type: 'workflow' }, current)
       );

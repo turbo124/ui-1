@@ -15,6 +15,12 @@ import {
 
 const staleTime = 5 * 60 * 1000;
 
+const queryOptions = {
+  staleTime,
+  refetchOnMount: false as const,
+  refetchOnWindowFocus: false as const,
+};
+
 // ---------------------------------------------------------------------------
 // Triggers — API returns {entity, label, events[]} per entity.
 // We flatten to one WorkflowTriggerMetadata per entity+event for the builder.
@@ -166,13 +172,12 @@ function normalizeAction(raw: Record<string, unknown>): WorkflowActionMetadata {
   else if (type === 'branch') stepKind = 'branch';
   else if (type === 'end') stepKind = 'end';
 
-  // Map category
-  let category: WorkflowActionMetadata['category'] = 'Actions';
-  const rawCategory = (raw.category as string) ?? '';
-  if (/wait/i.test(rawCategory) || stepKind === 'wait_delay' || stepKind === 'wait_event') {
-    category = 'Waits';
-  } else if (/flow/i.test(rawCategory) || stepKind === 'branch' || stepKind === 'end') {
-    category = 'Flow';
+  // Use raw category from API; only override for built-in step kinds
+  let category = (raw.category as string) || 'actions';
+  if (stepKind === 'wait_delay' || stepKind === 'wait_event') {
+    category = 'waits';
+  } else if (stepKind === 'branch' || stepKind === 'end') {
+    category = 'flow';
   }
 
   return {
@@ -204,7 +209,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
           return [];
         })
         .catch(() => []),
-    { staleTime }
+    queryOptions
   );
 
   const actions = useQuery<WorkflowActionMetadata[]>(
@@ -219,7 +224,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
           return [];
         })
         .catch(() => []),
-    { staleTime }
+    queryOptions
   );
 
   const fieldsQuery = useQuery<ConditionFieldDef[]>(
@@ -234,7 +239,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
           return [];
         })
         .catch(() => []),
-    { staleTime }
+    queryOptions
   );
 
   const dateFieldsRaw = useQuery<DateFieldsResponse>(
@@ -249,7 +254,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
           return { offset_operators: [], entity_fields: {} };
         })
         .catch(() => ({ offset_operators: [], entity_fields: {} } as DateFieldsResponse)),
-    { staleTime }
+    queryOptions
   );
 
   const operationsQuery = useQuery<WorkflowOperation[]>(
@@ -266,7 +271,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
           return [];
         })
         .catch(() => []),
-    { staleTime }
+    queryOptions
   );
 
   const resolvedTriggers = triggers.data ?? [];
@@ -279,76 +284,76 @@ export function useWorkflowMetadata(triggerEntity?: string) {
   const builtInSteps: WorkflowActionMetadata[] = [
     {
       id: 'wait_delay',
-      name: 'Wait / Delay',
-      category: 'Waits',
+      name: 'wait_delay',
+      category: 'waits',
       type: 'wait_delay',
-      description: 'Wait until a date relative to an entity field.',
+      description: 'wait_delay_description',
       icon: 'schedule',
       params_schema: [
-        { key: 'date_field', label: 'Date Field', type: 'date_field', required: true },
+        { key: 'date_field', label: 'date_field', type: 'date_field', required: true },
         {
           key: 'offset_operator',
-          label: 'When',
+          label: 'when',
           type: 'select',
           required: true,
           options: [
-            { label: 'On', value: 'on' },
-            { label: 'Before', value: 'before' },
-            { label: 'After', value: 'after' },
+            { label: 'on', value: 'on' },
+            { label: 'before', value: 'before' },
+            { label: 'after', value: 'after' },
           ],
         },
-        { key: 'offset_days', label: 'Offset (days)', type: 'number', placeholder: '0' },
+        { key: 'offset_days', label: 'offset_days', type: 'number', placeholder: '0' },
       ],
     },
     {
       id: 'wait_for_event',
-      name: 'Wait for Event',
-      category: 'Waits',
+      name: 'wait_for_event',
+      category: 'waits',
       type: 'wait_event',
-      description: 'Pause until a specific event occurs.',
+      description: 'wait_for_event_description',
       icon: 'hourglass_top',
       params_schema: [
-        { key: 'event', label: 'Event', type: 'select', required: true },
-        { key: 'timeout_days', label: 'Timeout (days)', type: 'number', placeholder: '30' },
+        { key: 'event', label: 'event', type: 'select', required: true },
+        { key: 'timeout_days', label: 'timeout_days', type: 'number', placeholder: '30' },
       ],
     },
     {
       id: 'branch',
-      name: 'Conditional',
-      category: 'Flow',
+      name: 'conditional',
+      category: 'flow',
       type: 'branch',
-      description: 'Evaluate a condition and branch.',
+      description: 'conditional_description',
       icon: 'alt_route',
       params_schema: [
-        { key: 'field', label: 'Field', type: 'entity_field', required: true },
-        { key: 'operator', label: 'Operator', type: 'operator', required: true },
-        { key: 'value', label: 'Value', type: 'text', placeholder: 'Comparison value' },
+        { key: 'field', label: 'field', type: 'entity_field', required: true },
+        { key: 'operator', label: 'operator', type: 'operator', required: true },
+        { key: 'value', label: 'value', type: 'text' },
       ],
     },
     {
       id: 'end',
-      name: 'End Workflow',
-      category: 'Flow',
+      name: 'end_workflow',
+      category: 'flow',
       type: 'end',
-      description: 'Terminate or restart a workflow path.',
+      description: 'end_workflow_description',
       icon: 'flag',
       params_schema: [
         {
           key: 'end_status',
-          label: 'Outcome',
+          label: 'outcome',
           type: 'select',
           options: [
-            { label: 'Completed', value: 'completed' },
-            { label: 'Lost / Cancelled', value: 'lost' },
+            { label: 'completed', value: 'completed' },
+            { label: 'lost', value: 'lost' },
           ],
         },
         {
           key: 'restart',
-          label: 'Repeat workflow',
+          label: 'repeat_workflow',
           type: 'select',
           options: [
-            { label: 'No', value: 'false' },
-            { label: 'Yes', value: 'true' },
+            { label: 'no', value: 'false' },
+            { label: 'yes', value: 'true' },
           ],
         },
       ],
@@ -376,7 +381,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
     const entity = triggerEntity.toLowerCase();
 
     return resolvedActions.filter((action) => {
-      if (action.category !== 'Actions') return true;
+      if (action.category === 'waits' || action.category === 'flow') return true;
       if (!action.entities || action.entities.length === 0) return true;
       return action.entities.some((e) => e.toLowerCase() === entity);
     });

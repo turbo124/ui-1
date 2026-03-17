@@ -30,19 +30,47 @@ export function TriggerConfigPanel({
 
   const wfTrigger = workflow.trigger ?? { entity: '', event: '', description: '', conditions: [], match: 'and' as const };
 
-  const isManual = wfTrigger.entity.toLowerCase() === 'manual';
-
   const entityOptions = Array.from(
     new Set(triggers.map((trigger) => trigger.entity))
   );
+
+  const effectiveEntity = wfTrigger.entity || entityOptions[0] || '';
+  const isManual = effectiveEntity.toLowerCase() === 'manual';
   const availableEvents = triggers.filter(
-    (trigger) => trigger.entity === wfTrigger.entity
+    (trigger) => trigger.entity === effectiveEntity
   );
+  const effectiveEvent = wfTrigger.event || availableEvents[0]?.event || '';
+
   const selectedTrigger = triggers.find(
     (trigger) =>
-      trigger.entity === wfTrigger.entity &&
-      trigger.event === wfTrigger.event
+      trigger.entity === effectiveEntity &&
+      trigger.event === effectiveEvent
   );
+
+  // Auto-select first entity/event when trigger is blank and options are available
+  if (
+    !readOnly &&
+    entityOptions.length > 0 &&
+    (!wfTrigger.entity || (!wfTrigger.event && availableEvents.length > 0))
+  ) {
+    const autoEntity = wfTrigger.entity || entityOptions[0];
+    const eventsForEntity = triggers.filter((tr) => tr.entity === autoEntity);
+    const autoEvent = wfTrigger.event || eventsForEntity[0]?.event || '';
+    const autoDescription = eventsForEntity.find((e) => e.event === autoEvent)?.label ?? '';
+
+    // Use setTimeout to avoid updating state during render
+    setTimeout(() => {
+      onChange({
+        ...workflow,
+        trigger: {
+          ...wfTrigger,
+          entity: autoEntity,
+          event: autoEvent,
+          description: autoDescription,
+        },
+      });
+    }, 0);
+  }
 
   if (readOnly) {
     return (
@@ -65,7 +93,7 @@ export function TriggerConfigPanel({
               {t('trigger')}
             </h3>
             <p className="text-xs" style={{ color: colors.$3, opacity: 0.5 }}>
-              {selectedTrigger?.description || `${wfTrigger.entity} ${wfTrigger.event}`}
+              {selectedTrigger?.description || `${t(wfTrigger.entity)} ${t(wfTrigger.event)}`}
             </p>
           </div>
           <MdLock size={14} style={{ color: colors.$3, opacity: 0.3 }} />
@@ -77,7 +105,7 @@ export function TriggerConfigPanel({
               {isManual ? t('type') : t('entity')}
             </div>
             <div className="text-sm font-medium" style={{ color: colors.$3 }}>
-              {wfTrigger.entity || '-'}
+              {wfTrigger.entity ? t(wfTrigger.entity) : '-'}
             </div>
           </div>
           {!isManual && (
@@ -86,9 +114,7 @@ export function TriggerConfigPanel({
                 {t('event')}
               </div>
               <div className="text-sm font-medium" style={{ color: colors.$3 }}>
-                {wfTrigger.event
-                  ? wfTrigger.event.charAt(0).toUpperCase() + wfTrigger.event.slice(1).replace(/_/g, ' ')
-                  : '-'}
+                {wfTrigger.event ? t(wfTrigger.event) : '-'}
               </div>
             </div>
           )}
@@ -106,7 +132,7 @@ export function TriggerConfigPanel({
                   className="rounded px-2 py-1 text-xs"
                   style={{ backgroundColor: colors.$2, color: colors.$3 }}
                 >
-                  {cond.field} {cond.operator} {cond.value}
+                  {t(cond.field)} {cond.operator} {cond.value}
                 </li>
               ))}
             </ul>
@@ -143,20 +169,28 @@ export function TriggerConfigPanel({
 
       <SelectField
         customSelector
-        label={t('entity')}
-        value={wfTrigger.entity}
+        label={t('module')}
+        value={effectiveEntity}
         onValueChange={(value) => {
           const manualTrigger = value.toLowerCase() === 'manual'
             ? triggers.find((tr) => tr.entity.toLowerCase() === 'manual')
             : undefined;
+
+          const eventsForEntity = triggers.filter((tr) => tr.entity === value);
+          const firstEvent = manualTrigger
+            ? manualTrigger.event
+            : eventsForEntity[0]?.event ?? '';
+          const firstDescription = manualTrigger
+            ? manualTrigger.label
+            : eventsForEntity.find((e) => e.event === firstEvent)?.label ?? '';
 
           onChange({
             ...workflow,
             trigger: {
               ...wfTrigger,
               entity: value,
-              event: manualTrigger ? manualTrigger.event : '',
-              description: manualTrigger?.label ?? '',
+              event: firstEvent,
+              description: firstDescription ?? '',
               conditions: manualTrigger ? [] : wfTrigger.conditions,
             },
           });
@@ -167,10 +201,9 @@ export function TriggerConfigPanel({
           errors?.errors?.entity
         }
       >
-        <option value="">{t('select_entity')}</option>
         {entityOptions.map((entity) => (
           <option key={entity} value={entity}>
-            {entity}
+            {t(entity)}
           </option>
         ))}
       </SelectField>
@@ -179,7 +212,7 @@ export function TriggerConfigPanel({
         <SelectField
           customSelector
           label={t('event')}
-          value={wfTrigger.event}
+          value={effectiveEvent}
           onValueChange={(value) =>
             onChange({
               ...workflow,
@@ -197,13 +230,9 @@ export function TriggerConfigPanel({
             errors?.errors?.event
           }
         >
-          <option value="">{t('select_event')}</option>
           {availableEvents.map((item) => (
             <option key={item.id} value={item.event}>
-              {item.event
-                ? item.event.charAt(0).toUpperCase() +
-                  item.event.slice(1).replace(/_/g, ' ')
-                : item.id}
+              {t(item.event)}
             </option>
           ))}
         </SelectField>

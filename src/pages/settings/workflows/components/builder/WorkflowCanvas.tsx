@@ -4,10 +4,9 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
-  ReactFlowInstance,
   Edge,
 } from '@xyflow/react';
-import { createContext, DragEvent, useCallback, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 import { useColorScheme } from '$app/common/colors';
 import { BuilderNode } from '../../types/workflow';
 import { WorkflowEdge } from './edges/WorkflowEdge';
@@ -46,47 +45,11 @@ interface Props {
   onEdgesChange: (changes: any) => void;
   onConnect: (connection: any) => void;
   onNodeClick: (_: unknown, node: BuilderNode) => void;
-  onDropStep?: (payload: { x: number; y: number; actionId: string }) => void;
   onEdgeInsertClick?: (edgeId: string) => void;
 }
 
 export function WorkflowCanvas(props: Props) {
   const colors = useColorScheme();
-  const [instance, setInstance] = useState<ReactFlowInstance<BuilderNode> | null>(
-    null
-  );
-
-  const onDragOver = useCallback((event: DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const onDrop = useCallback(
-    (event: DragEvent) => {
-      event.preventDefault();
-
-      const payload = event.dataTransfer.getData(
-        'application/invoiceninja-workflow-step'
-      );
-
-      if (!payload || !instance || !props.onDropStep) {
-        return;
-      }
-
-      const action = JSON.parse(payload) as { id: string };
-      const position = instance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      props.onDropStep({
-        x: position.x,
-        y: position.y,
-        actionId: action.id,
-      });
-    },
-    [instance, props]
-  );
 
   return (
     <ReactFlowProvider>
@@ -111,8 +74,8 @@ export function WorkflowCanvas(props: Props) {
             >
               <div className="text-sm font-semibold">Start Building</div>
               <div className="mt-1 text-xs opacity-70">
-                Drag a step from the Step Palette onto the canvas, or click a step
-                to add it. Steps are executed in sequential order.
+                Click a step from the Step Palette to add it, or use the + button
+                on an edge to insert between steps.
               </div>
             </div>
           )}
@@ -124,9 +87,6 @@ export function WorkflowCanvas(props: Props) {
             onEdgesChange={props.onEdgesChange}
             onConnect={props.onConnect}
             onNodeClick={props.onNodeClick}
-            onInit={(value) => setInstance(value)}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
           >

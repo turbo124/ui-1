@@ -64,7 +64,7 @@ export interface ConditionFieldDef {
 export interface WorkflowActionMetadata {
   id: string;
   name: string;
-  category: 'Actions' | 'Waits' | 'Flow';
+  category: string;
   type: WorkflowStepKind;
   description: string;
   icon: string;
@@ -95,7 +95,9 @@ export interface WorkflowActionField {
     | 'field_select'
     | 'operation_select'
     | 'dynamic'
-    | 'number_or_full';
+    | 'number_or_full'
+    | 'key_value'
+    | 'string';
   required?: boolean;
   placeholder?: string;
   options?: Array<{ label: string; value: string }>;

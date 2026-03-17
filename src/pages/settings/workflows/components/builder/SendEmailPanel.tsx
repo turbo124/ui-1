@@ -1,4 +1,6 @@
-import { SelectField } from '$app/components/forms';
+import { InputField, SelectField } from '$app/components/forms';
+import { UserSelector } from '$app/components/users/UserSelector';
+import { MarkdownEditor } from '$app/components/forms/MarkdownEditor';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import {
@@ -10,24 +12,40 @@ export function SendEmailPanel({
   step,
   action,
   errors,
-  contextVariables,
   onChange,
 }: {
   step: WorkflowStep;
   action: WorkflowActionMetadata;
   errors?: (key: string) => string[] | undefined;
-  contextVariables: Array<{ label: string; value: string }>;
+  triggerEntity?: string;
   onChange: (step: WorkflowStep) => void;
 }) {
   const [t] = useTranslation();
   const colors = useColorScheme();
   const config = step.config ?? {};
 
+  const toField = action.params_schema.find((f) => f.key === 'to');
+  const toOptions = toField?.options ?? [];
+
   const templateField = action.params_schema.find((f) => f.key === 'template');
   const templateOptions = templateField?.options ?? [];
 
+  const isCustom = config.template === 'custom';
+  const isSpecificUser = config.to === 'specific_user';
+
   const updateConfig = (key: string, value: string) => {
-    onChange({ ...step, config: { ...config, [key]: value } });
+    const next = { ...step, config: { ...config, [key]: value } };
+
+    if (key === 'to' && value !== 'specific_user') {
+      delete next.config.user_id;
+    }
+
+    if (key === 'template' && value !== 'custom') {
+      delete next.config.subject;
+      delete next.config.body;
+    }
+
+    onChange(next);
   };
 
   return (
@@ -44,18 +62,29 @@ export function SendEmailPanel({
 
       <SelectField
         customSelector
-        label={t('entity_reference')}
-        value={config.entity_ref ?? ''}
-        onValueChange={(value) => updateConfig('entity_ref', value)}
-        errorMessage={errors?.('entity_ref')}
+        label={t('to')}
+        value={config.to ?? ''}
+        onValueChange={(value) => updateConfig('to', value)}
+        errorMessage={errors?.('to')}
       >
         <option value="">{t('select_value')}</option>
-        {contextVariables.map((cv) => (
-          <option key={cv.value} value={cv.value}>
-            {cv.label}
+        {toOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {t(opt.label)}
           </option>
         ))}
       </SelectField>
+
+      {isSpecificUser && (
+        <UserSelector
+          inputLabel={t('user')}
+          value={config.user_id ?? ''}
+          onChange={(user) => updateConfig('user_id', user.id)}
+          clearButton={Boolean(config.user_id)}
+          onClearButtonClick={() => updateConfig('user_id', '')}
+          errorMessage={errors?.('user_id')}
+        />
+      )}
 
       <SelectField
         customSelector
@@ -67,10 +96,39 @@ export function SendEmailPanel({
         <option value="">{t('select_value')}</option>
         {templateOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
-            {opt.label}
+            {t(opt.label)}
           </option>
         ))}
       </SelectField>
+
+      {isCustom && (
+        <>
+          <InputField
+            label={t('subject')}
+            value={config.subject ?? ''}
+            onValueChange={(value) => updateConfig('subject', value)}
+            errorMessage={errors?.('subject')}
+          />
+
+          <div>
+            <div
+              className="mb-1.5 text-sm font-medium"
+              style={{ color: colors.$3 }}
+            >
+              {t('body')}
+            </div>
+            <MarkdownEditor
+              value={config.body ?? ''}
+              onChange={(value) => updateConfig('body', value)}
+            />
+            {errors?.('body') && (
+              <div className="mt-1 text-xs text-red-500">
+                {errors('body')}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
