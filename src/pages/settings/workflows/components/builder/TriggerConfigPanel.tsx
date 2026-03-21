@@ -191,7 +191,7 @@ export function TriggerConfigPanel({
               entity: value,
               event: firstEvent,
               description: firstDescription ?? '',
-              conditions: manualTrigger ? [] : wfTrigger.conditions,
+              conditions: [],
             },
           });
         }}

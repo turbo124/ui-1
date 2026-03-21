@@ -323,7 +323,7 @@ function WorkflowBuilderInner({
                 ? builder.description.length > 80
                   ? builder.description.slice(0, 80) + '...'
                   : builder.description
-                : t('add_description')}
+                : t('description')}
             </button>
           )}
         </div>

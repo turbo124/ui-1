@@ -63,20 +63,22 @@ function flattenTriggers(
 // ---------------------------------------------------------------------------
 
 function flattenFields(
-  raw: Record<string, Array<{ field: string; label: string; type: string; operators?: string[]; options?: Array<{ value: string | number; label: string }> }>>
+  raw: Record<string, Array<{ field: string; label: string; type: string; operators?: string[]; options?: Array<{ value: string | number; label: string }> }>>,
+  triggerEntity: string
 ): ConditionFieldDef[] {
   const result: ConditionFieldDef[] = [];
 
-  for (const [, fields] of Object.entries(raw)) {
-    for (const f of fields) {
-      result.push({
-        key: f.field,
-        label: f.label,
-        type: (f.type as ConditionFieldDef['type']) ?? 'string',
-        operators: f.operators,
-        options: f.options,
-      });
-    }
+  // Prefer the trigger entity's fields; fall back to all if none match
+  const fields = raw[triggerEntity] ?? Object.values(raw).flat();
+
+  for (const f of fields) {
+    result.push({
+      key: f.field,
+      label: f.label,
+      type: (f.type as ConditionFieldDef['type']) ?? 'string',
+      operators: f.operators,
+      options: f.options,
+    });
   }
 
   return result;
@@ -227,18 +229,20 @@ export function useWorkflowMetadata(triggerEntity?: string) {
     queryOptions
   );
 
-  const fieldsQuery = useQuery<ConditionFieldDef[]>(
+  type RawFieldsMap = Record<string, Array<{ field: string; label: string; type: string; operators?: string[]; options?: Array<{ value: string | number; label: string }> }>>;
+
+  const fieldsRaw = useQuery<RawFieldsMap>(
     ['/api/v1/workflows/metadata/fields'],
     () =>
       request('GET', endpoint('/api/v1/workflows/metadata/fields'))
         .then((response: { data?: { data?: unknown } }) => {
           const data = response.data?.data;
           if (data && typeof data === 'object' && !Array.isArray(data)) {
-            return flattenFields(data as Record<string, Array<{ field: string; label: string; type: string; operators?: string[] }>>);
+            return data as RawFieldsMap;
           }
-          return [];
+          return {};
         })
-        .catch(() => []),
+        .catch(() => ({})),
     queryOptions
   );
 
@@ -275,7 +279,10 @@ export function useWorkflowMetadata(triggerEntity?: string) {
   );
 
   const resolvedTriggers = triggers.data ?? [];
-  const resolvedFields = fieldsQuery.data ?? [];
+  const resolvedFields = useMemo(
+    () => flattenFields(fieldsRaw.data ?? {}, triggerEntity ?? ''),
+    [fieldsRaw.data, triggerEntity]
+  );
   const resolvedOperations = operationsQuery.data ?? [];
 
   // The actions endpoint only returns action-type steps (send_email, etc.).
@@ -428,7 +435,7 @@ export function useWorkflowMetadata(triggerEntity?: string) {
   const isLoading =
     triggers.isLoading ||
     actions.isLoading ||
-    fieldsQuery.isLoading ||
+    fieldsRaw.isLoading ||
     dateFieldsRaw.isLoading ||
     operationsQuery.isLoading;
 

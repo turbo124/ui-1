@@ -30,6 +30,14 @@ export function SendEmailPanel({
   const templateField = action.params_schema.find((f) => f.key === 'template');
   const templateOptions = templateField?.options ?? [];
 
+  // Auto-default to first option when empty
+  if (toOptions.length > 0 && !config.to) {
+    setTimeout(() => updateConfig('to', toOptions[0].value), 0);
+  }
+  if (templateOptions.length > 0 && !config.template) {
+    setTimeout(() => updateConfig('template', templateOptions[0].value), 0);
+  }
+
   const isCustom = config.template === 'custom';
   const isSpecificUser = config.to === 'specific_user';
 
@@ -63,11 +71,10 @@ export function SendEmailPanel({
       <SelectField
         customSelector
         label={t('to')}
-        value={config.to ?? ''}
+        value={config.to || toOptions[0]?.value || ''}
         onValueChange={(value) => updateConfig('to', value)}
         errorMessage={errors?.('to')}
       >
-        <option value="">{t('select_value')}</option>
         {toOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {t(opt.label)}
@@ -89,11 +96,10 @@ export function SendEmailPanel({
       <SelectField
         customSelector
         label={t('template')}
-        value={config.template ?? ''}
+        value={config.template || templateOptions[0]?.value || ''}
         onValueChange={(value) => updateConfig('template', value)}
         errorMessage={errors?.('template')}
       >
-        <option value="">{t('select_value')}</option>
         {templateOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {t(opt.label)}

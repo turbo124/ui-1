@@ -49,7 +49,7 @@ export interface WorkflowTriggerMetadata {
 
 // --- Fields metadata (from /api/v1/workflows/metadata/fields) ---
 
-export type ConditionFieldType = 'string' | 'number' | 'date' | 'status' | 'relation';
+export type ConditionFieldType = 'string' | 'number' | 'date' | 'status' | 'select' | 'relation';
 
 export interface ConditionFieldDef {
   key: string;

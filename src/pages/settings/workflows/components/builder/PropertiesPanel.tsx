@@ -265,12 +265,17 @@ export function PropertiesPanel({
               }
 
               if (field.type === 'entity_field') {
+                const currentVal = (step.config ?? {})[field.key];
+                const effectiveVal = currentVal || conditionFields[0]?.key || '';
+                if (effectiveVal && effectiveVal !== currentVal) {
+                  setTimeout(() => onChange({ ...step, config: { ...step.config, [field.key]: effectiveVal } }), 0);
+                }
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
                     label={t(field.label)}
-                    value={(step.config ?? {})[field.key]}
+                    value={effectiveVal}
                     onValueChange={(value) =>
                       onChange({
                         ...step,
@@ -279,7 +284,6 @@ export function PropertiesPanel({
                     }
                     errorMessage={stepErrors(field.key)}
                   >
-                    <option value="">{t('select_value')}</option>
                     {conditionFields.map((cf) => (
                       <option key={cf.key} value={cf.key}>
                         {t(cf.label)}
@@ -290,12 +294,17 @@ export function PropertiesPanel({
               }
 
               if (field.type === 'operator') {
+                const currentVal = (step.config ?? {})[field.key];
+                const effectiveVal = currentVal || operations[0]?.key || '';
+                if (effectiveVal && effectiveVal !== currentVal) {
+                  setTimeout(() => onChange({ ...step, config: { ...step.config, [field.key]: effectiveVal } }), 0);
+                }
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
                     label={t(field.label)}
-                    value={(step.config ?? {})[field.key]}
+                    value={effectiveVal}
                     onValueChange={(value) =>
                       onChange({
                         ...step,
@@ -304,7 +313,6 @@ export function PropertiesPanel({
                     }
                     errorMessage={stepErrors(field.key)}
                   >
-                    <option value="">{t('select_value')}</option>
                     {operations.map((op) => (
                       <option key={op.key} value={op.key}>
                         {t(op.label)}
@@ -315,12 +323,17 @@ export function PropertiesPanel({
               }
 
               if (field.type === 'date_field') {
+                const currentVal = (step.config ?? {})[field.key];
+                const effectiveVal = currentVal || dateFields[0]?.key || '';
+                if (effectiveVal && effectiveVal !== currentVal) {
+                  setTimeout(() => onChange({ ...step, config: { ...step.config, [field.key]: effectiveVal } }), 0);
+                }
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
                     label={t(field.label)}
-                    value={(step.config ?? {})[field.key]}
+                    value={effectiveVal}
                     onValueChange={(value) =>
                       onChange({
                         ...step,
@@ -329,7 +342,6 @@ export function PropertiesPanel({
                     }
                     errorMessage={stepErrors(field.key)}
                   >
-                    <option value="">{t('select_value')}</option>
                     {dateFields.map((df) => (
                       <option key={df.key} value={df.key}>
                         {t(df.label)}
@@ -408,12 +420,17 @@ export function PropertiesPanel({
                   return null;
                 }
 
+                const selectCurrentVal = (step.config ?? {})[field.key];
+                const selectEffectiveVal = selectCurrentVal || fieldOptions?.[0]?.value || '';
+                if (selectEffectiveVal && selectEffectiveVal !== selectCurrentVal) {
+                  setTimeout(() => onChange({ ...step, config: { ...step.config, [field.key]: String(selectEffectiveVal) } }), 0);
+                }
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
                     label={t(field.label)}
-                    value={(step.config ?? {})[field.key]}
+                    value={String(selectEffectiveVal)}
                     onValueChange={(value) =>
                       onChange({
                         ...step,
@@ -422,7 +439,6 @@ export function PropertiesPanel({
                     }
                     errorMessage={stepErrors(field.key)}
                   >
-                    <option value="">{t('select_value')}</option>
                     {fieldOptions?.map((option) => (
                       <option key={option.value} value={option.value}>
                         {t(option.label)}
@@ -433,13 +449,17 @@ export function PropertiesPanel({
               }
 
               if (field.type === 'operation_select') {
-                // Group operations by category for a cleaner dropdown
+                const opCurrentVal = (step.config ?? {})[field.key];
+                const opEffectiveVal = opCurrentVal || operations[0]?.key || '';
+                if (opEffectiveVal && opEffectiveVal !== opCurrentVal) {
+                  setTimeout(() => onChange({ ...step, config: { ...step.config, [field.key]: opEffectiveVal } }), 0);
+                }
                 return (
                   <SelectField
                     key={field.key}
                     customSelector
                     label={t(field.label)}
-                    value={(step.config ?? {})[field.key]}
+                    value={opEffectiveVal}
                     onValueChange={(value) =>
                       onChange({
                         ...step,
@@ -448,7 +468,6 @@ export function PropertiesPanel({
                     }
                     errorMessage={stepErrors(field.key)}
                   >
-                    <option value="">{t('select_value')}</option>
                     {operations.map((op) => (
                       <option key={op.key} value={op.key}>
                         {t(op.label)}

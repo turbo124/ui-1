@@ -1,51 +1,145 @@
 import { Button, InputField, SelectField } from '$app/components/forms';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
-import { ConditionFieldDef, WorkflowCondition } from '../../types/workflow';
+import { ConditionFieldDef, ConditionFieldType, WorkflowCondition } from '../../types/workflow';
 import { MdClose } from 'react-icons/md';
 
 const stringOperators = [
-  { label: 'equals', value: 'eq' },
-  { label: 'not_equals', value: 'neq' },
+  { label: 'is', value: '=' },
+  { label: '!=', value: '!=' },
   { label: 'contains', value: 'contains' },
-  { label: 'is_empty', value: 'empty' },
-  { label: 'is_not_empty', value: 'not_empty' },
+  { label: 'starts_with', value: 'starts_with' },
+  { label: 'is_empty', value: 'is_empty' },
 ];
 
 const numberOperators = [
-  { label: 'equals', value: 'eq' },
-  { label: 'not_equals', value: 'neq' },
-  { label: 'greater_than', value: 'gt' },
-  { label: 'less_than', value: 'lt' },
-  { label: 'greater_than_or_equal', value: 'gte' },
-  { label: 'less_than_or_equal', value: 'lte' },
+  { label: '=', value: '=' },
+  { label: '!=', value: '!=' },
+  { label: '>', value: '>' },
+  { label: '>=', value: '>=' },
+  { label: '<', value: '<' },
+  { label: '<=', value: '<=' },
+];
+
+const statusOperators = [
+  { label: '=', value: '=' },
+  { label: '!=', value: '!=' },
 ];
 
 const dateOperators = [
-  { label: 'after', value: 'date_gt' },
-  { label: 'before', value: 'date_lt' },
-  { label: 'on', value: 'date_eq' },
+  { label: 'after', value: '>' },
+  { label: 'before', value: '<' },
+  { label: 'on', value: '=' },
   { label: 'has_passed', value: 'date_past' },
   { label: 'is_in_the_future', value: 'date_future' },
 ];
 
-const dateUnits = [
-  { label: 'days', value: 'days' },
-  { label: 'hours', value: 'hours' },
-  { label: 'weeks', value: 'weeks' },
-];
+const noValueOperators = ['is_empty', 'date_past', 'date_future'];
 
-const noValueOperators = ['empty', 'not_empty', 'date_past', 'date_future'];
-
-function getOperatorsForType(type: ConditionFieldDef['type']) {
+function getOperatorsForType(type: ConditionFieldType) {
   switch (type) {
     case 'number':
       return numberOperators;
     case 'date':
       return dateOperators;
+    case 'status':
+      return statusOperators;
+    case 'relation':
+      return statusOperators;
     default:
       return stringOperators;
   }
+}
+
+function ValueInput({
+  condition,
+  fieldDef,
+  onChange,
+}: {
+  condition: WorkflowCondition;
+  fieldDef: ConditionFieldDef | undefined;
+  onChange: (value: string) => void;
+}) {
+  const [t] = useTranslation();
+  const fieldType = fieldDef?.type ?? 'string';
+
+  // status / select — render dropdown from field options
+  if ((fieldType === 'status' || fieldType === 'select') && fieldDef?.options?.length) {
+    const effectiveValue = condition.value || String(fieldDef.options[0].value);
+    if (effectiveValue !== condition.value) {
+      setTimeout(() => onChange(effectiveValue), 0);
+    }
+    return (
+      <SelectField
+        customSelector
+        label={t('value')}
+        value={effectiveValue}
+        onValueChange={onChange}
+      >
+        {fieldDef.options.map((opt) => (
+          <option key={opt.value} value={String(opt.value)}>
+            {opt.label}
+          </option>
+        ))}
+      </SelectField>
+    );
+  }
+
+  // number — number input
+  if (fieldType === 'number') {
+    return (
+      <InputField
+        label={t('value')}
+        type="number"
+        value={condition.value}
+        onValueChange={onChange}
+      />
+    );
+  }
+
+  // date — date picker
+  if (fieldType === 'date') {
+    return (
+      <InputField
+        label={t('value')}
+        type="date"
+        value={condition.value}
+        onValueChange={onChange}
+      />
+    );
+  }
+
+  // relation — dropdown from field options (API-provided)
+  if (fieldType === 'relation' && fieldDef?.options?.length) {
+    const effectiveValue = condition.value || String(fieldDef.options[0].value);
+    if (effectiveValue !== condition.value) {
+      setTimeout(() => onChange(effectiveValue), 0);
+    }
+    return (
+      <SelectField
+        customSelector
+        label={t('value')}
+        value={effectiveValue}
+        onValueChange={onChange}
+      >
+        {fieldDef.options.map((opt) => (
+          <option key={opt.value} value={String(opt.value)}>
+            {opt.label}
+          </option>
+        ))}
+      </SelectField>
+    );
+  }
+
+  // string / fallback — text input
+  return (
+    <InputField
+      label={t('value')}
+      value={condition.value}
+      placeholder={t('enter_value')}
+      onValueChange={onChange}
+    />
+  );
 }
 
 export function ConditionBuilder({
@@ -106,11 +200,27 @@ export function ConditionBuilder({
       </div>
 
       {conditions.map((condition, index) => {
-        const fieldDef = getFieldDef(condition.field);
+        const effectiveField = condition.field || fields[0]?.key || '';
+        const fieldDef = getFieldDef(effectiveField);
         const fieldType = fieldDef?.type ?? 'string';
         const operators = getOperatorsForType(fieldType);
-        const isDateOperator = (condition.operator ?? '').startsWith('date_');
-        const needsValue = !noValueOperators.includes(condition.operator ?? '');
+        const effectiveOperator = condition.operator && operators.some((o) => o.value === condition.operator)
+          ? condition.operator
+          : operators[0]?.value ?? '';
+        const needsValue = !noValueOperators.includes(effectiveOperator);
+
+        // Sync effective values back if they differ
+        if (effectiveField !== condition.field || effectiveOperator !== condition.operator) {
+          setTimeout(() => {
+            onChange(
+              conditions.map((entry) =>
+                entry.id === condition.id
+                  ? { ...entry, field: effectiveField, operator: effectiveOperator }
+                  : entry
+              )
+            );
+          }, 0);
+        }
 
         return (
           <div
@@ -150,7 +260,7 @@ export function ConditionBuilder({
               <SelectField
                 customSelector
                 label={t('field')}
-                value={condition.field}
+                value={effectiveField}
                 onValueChange={(value) => {
                   const newFieldType = getFieldDef(value)?.type ?? 'string';
                   const firstOperator = getOperatorsForType(newFieldType)[0]?.value ?? '';
@@ -171,11 +281,11 @@ export function ConditionBuilder({
                 ))}
               </SelectField>
 
-              {condition.field && (
+              {effectiveField && (
                 <SelectField
                   customSelector
                   label={t('operator')}
-                  value={condition.operator}
+                  value={effectiveOperator}
                   onValueChange={(value) =>
                     onChange(
                       conditions.map((entry) =>
@@ -194,48 +304,20 @@ export function ConditionBuilder({
                 </SelectField>
               )}
 
-              {condition.operator && needsValue && (
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <InputField
-                      label={t('value')}
-                      value={condition.value}
-                      placeholder={isDateOperator ? '3' : t('enter_value')}
-                      onValueChange={(value) =>
-                        onChange(
-                          conditions.map((entry) =>
-                            entry.id === condition.id
-                              ? { ...entry, value }
-                              : entry
-                          )
-                        )
-                      }
-                    />
-                  </div>
-                  {isDateOperator && (
-                    <div style={{ minWidth: '90px' }}>
-                      <SelectField
-                        customSelector
-                        value={(condition as any).unit ?? 'days'}
-                        onValueChange={(value) =>
-                          onChange(
-                            conditions.map((entry) =>
-                              entry.id === condition.id
-                                ? { ...entry, unit: value } as any
-                                : entry
-                            )
-                          )
-                        }
-                      >
-                        {dateUnits.map((unit) => (
-                          <option key={unit.value} value={unit.value}>
-                            {t(unit.label)}
-                          </option>
-                        ))}
-                      </SelectField>
-                    </div>
-                  )}
-                </div>
+              {effectiveOperator && needsValue && (
+                <ValueInput
+                  condition={condition}
+                  fieldDef={fieldDef}
+                  onChange={(value) =>
+                    onChange(
+                      conditions.map((entry) =>
+                        entry.id === condition.id
+                          ? { ...entry, value }
+                          : entry
+                      )
+                    )
+                  }
+                />
               )}
             </div>
           </div>

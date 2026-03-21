@@ -1,5 +1,4 @@
 import { SelectField } from '$app/components/forms';
-import { useTranslation } from 'react-i18next';
 
 export function EntityRefSelector({
   value,
@@ -12,16 +11,19 @@ export function EntityRefSelector({
   onValueChange: (value: string) => void;
   label: string;
 }) {
-  const [t] = useTranslation();
+  const effectiveValue = value || options[0]?.value || '';
+
+  if (effectiveValue && effectiveValue !== value) {
+    setTimeout(() => onValueChange(effectiveValue), 0);
+  }
 
   return (
     <SelectField
       customSelector
       label={label}
-      value={value}
+      value={effectiveValue}
       onValueChange={onValueChange}
     >
-      <option value="">{t('select_reference')}</option>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}

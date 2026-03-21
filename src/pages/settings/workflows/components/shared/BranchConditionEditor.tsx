@@ -4,26 +4,26 @@ import { useColorScheme } from '$app/common/colors';
 import { ConditionFieldDef } from '../../types/workflow';
 
 const stringOperators = [
-  { label: 'equals', value: 'eq' },
-  { label: 'not_equals', value: 'neq' },
+  { label: 'is', value: '=' },
+  { label: '!=', value: '!=' },
   { label: 'contains', value: 'contains' },
-  { label: 'is_empty', value: 'empty' },
-  { label: 'is_not_empty', value: 'not_empty' },
+  { label: 'starts_with', value: 'starts_with' },
+  { label: 'is_empty', value: 'is_empty' },
 ];
 
 const numberOperators = [
-  { label: 'equals', value: 'eq' },
-  { label: 'not_equals', value: 'neq' },
-  { label: 'greater_than', value: 'gt' },
-  { label: 'less_than', value: 'lt' },
-  { label: 'greater_than_or_equal', value: 'gte' },
-  { label: 'less_than_or_equal', value: 'lte' },
+  { label: '=', value: '=' },
+  { label: '!=', value: '!=' },
+  { label: '>', value: '>' },
+  { label: '>=', value: '>=' },
+  { label: '<', value: '<' },
+  { label: '<=', value: '<=' },
 ];
 
 const dateOperators = [
-  { label: 'after', value: 'date_gt' },
-  { label: 'before', value: 'date_lt' },
-  { label: 'on', value: 'date_eq' },
+  { label: 'after', value: '>' },
+  { label: 'before', value: '<' },
+  { label: 'on', value: '=' },
   { label: 'has_passed', value: 'date_past' },
   { label: 'is_in_the_future', value: 'date_future' },
 ];
@@ -34,7 +34,7 @@ const dateUnits = [
   { label: 'weeks', value: 'weeks' },
 ];
 
-const noValueOperators = ['empty', 'not_empty', 'date_past', 'date_future'];
+const noValueOperators = ['is_empty', 'date_past', 'date_future'];
 
 function getOperatorsForType(type: ConditionFieldDef['type']) {
   switch (type) {
@@ -65,11 +65,25 @@ export function BranchConditionEditor({
   const [t] = useTranslation();
   const colors = useColorScheme();
 
-  const selectedFieldDef = conditionFields.find((f) => f.key === conditionField);
+  const effectiveField = conditionField || conditionFields[0]?.key || '';
+  const selectedFieldDef = conditionFields.find((f) => f.key === effectiveField);
   const fieldType = selectedFieldDef?.type ?? 'string';
   const operators = getOperatorsForType(fieldType);
-  const isDateOperator = conditionOperator.startsWith('date_');
-  const needsValue = !noValueOperators.includes(conditionOperator);
+  const effectiveOperator = conditionOperator && operators.some((o) => o.value === conditionOperator)
+    ? conditionOperator
+    : operators[0]?.value ?? '';
+  const isDateField = fieldType === 'date';
+  const needsValue = !noValueOperators.includes(effectiveOperator);
+
+  // Auto-select first field/operator when blank
+  if (effectiveField !== conditionField || effectiveOperator !== conditionOperator) {
+    setTimeout(() => {
+      onChange({
+        condition_field: effectiveField,
+        condition_operator: effectiveOperator,
+      });
+    }, 0);
+  }
 
   return (
     <div
@@ -109,7 +123,7 @@ export function BranchConditionEditor({
           <div className="flex-1">
             <SelectField
               customSelector
-              value={conditionField}
+              value={effectiveField}
               onValueChange={(value) => {
                 const newFieldType = conditionFields.find((f) => f.key === value)?.type ?? 'string';
                 const firstOperator = getOperatorsForType(newFieldType)[0]?.value ?? '';
@@ -131,10 +145,10 @@ export function BranchConditionEditor({
           </div>
         </div>
 
-        {conditionField && (
+        {effectiveField && (
           <SelectField
             customSelector
-            value={conditionOperator}
+            value={effectiveOperator}
             onValueChange={(value) =>
               onChange({
                 condition_operator: value,
@@ -150,18 +164,18 @@ export function BranchConditionEditor({
           </SelectField>
         )}
 
-        {conditionOperator && needsValue && (
+        {effectiveOperator && needsValue && (
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <InputField
-                label={isDateOperator ? `${t('value')} (${t(conditionUnit || 'days')})` : undefined}
+                label={isDateField ? `${t('value')} (${t(conditionUnit || 'days')})` : undefined}
                 value={conditionValue}
-                placeholder={isDateOperator ? '3' : fieldType === 'number' ? '0' : t('enter_value')}
+                placeholder={isDateField ? '3' : fieldType === 'number' ? '0' : t('enter_value')}
                 onValueChange={(value) => onChange({ condition_value: value })}
               />
             </div>
 
-            {isDateOperator && (
+            {isDateField && (
               <div style={{ minWidth: '100px' }}>
                 <SelectField
                   customSelector
@@ -181,18 +195,18 @@ export function BranchConditionEditor({
       </div>
 
       {/* Preview */}
-      {conditionField && conditionOperator && (
+      {effectiveField && effectiveOperator && (
         <div
           className="rounded-md px-3 py-2 text-xs"
           style={{ backgroundColor: colors.$2, color: colors.$3 }}
         >
           <span style={{ opacity: 0.6 }}>
             {selectedFieldDef?.label ?? conditionField}{' '}
-            {t(operators.find((o) => o.value === conditionOperator)?.label ?? '')}
+            {t(operators.find((o) => o.value === effectiveOperator)?.label ?? '')}
             {needsValue && conditionValue && (
               <>
                 {' '}{conditionValue}
-                {isDateOperator && ` ${t(conditionUnit || 'days')}`}
+                {isDateField && ` ${t(conditionUnit || 'days')}`}
               </>
             )}
           </span>
