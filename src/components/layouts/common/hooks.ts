@@ -191,14 +191,6 @@ export function useSettingsRoutes() {
       enabled: ((isAdmin || isOwner) && isCompanySettingsActive) || false,
     },
     {
-      name: t('workflows'),
-      href: '/workflows',
-      current:
-        location.pathname.startsWith('/workflows') ||
-        location.pathname.startsWith('/workflow_runs'),
-      enabled: ((isAdmin || isOwner) && isCompanySettingsActive) || false,
-    },
-    {
       name: t('system_logs'),
       href: '/settings/system_logs',
       current: location.pathname.startsWith('/settings/system_logs'),
