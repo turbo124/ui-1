@@ -242,11 +242,11 @@ export function useColumns({ report, columns }: Props) {
 
   const defaultColumns = [
     columns.includes('client')
-      ? clientMap.concat(
-          columns.includes('location')
-            ? locationMap.map((r) => ({ ...r, map: 'client' }))
-            : []
-        )
+      ? columns.includes('location')
+        ? clientMap.concat(
+            locationMap.map((r) => ({ ...r, origin: 'client' }))
+          )
+        : clientMap
       : [],
     columns.includes('invoice')
       ? columns.includes('item')
@@ -265,11 +265,11 @@ export function useColumns({ report, columns }: Props) {
       : [],
     columns.includes('payment') ? paymentMap : [],
     columns.includes('vendor')
-      ? vendorMap.concat(
-          columns.includes('location')
-            ? locationMap.map((r) => ({ ...r, map: 'vendor' }))
-            : []
-        )
+      ? columns.includes('location')
+        ? vendorMap.concat(
+            locationMap.map((r) => ({ ...r, origin: 'vendor' }))
+          )
+        : vendorMap
       : [],
     columns.includes('purchase_order')
       ? columns.includes('item')

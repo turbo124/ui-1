@@ -11,7 +11,7 @@
 import { Record } from './client-map';
 
 export const locationMap: Record[] = [
-  { trans: 'name', value: 'location.name', map: 'location' },
+  { trans: 'location_name', value: 'location.name', map: 'location' },
   { trans: 'address1', value: 'location.address1', map: 'location' },
   { trans: 'address2', value: 'location.address2', map: 'location' },
   { trans: 'city', value: 'location.city', map: 'location' },
