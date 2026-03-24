@@ -72,7 +72,8 @@ export type Identifier =
   | 'user_sales_report'
   | 'tax_summary_report'
   | 'tax_period_report'
-  | 'project';
+  | 'project'
+  | 'client_location';
 
 export function useReports() {
   const reports: Report[] = [
@@ -646,6 +647,25 @@ export function useReports() {
       },
       preview: '/api/v1/reports/project?output=json',
       supports_previews: false,
+    },
+    {
+      identifier: 'client_location',
+      label: 'client_location',
+      schedule_identifier: 'client_location',
+      endpoint: '/api/v1/reports/client_locations',
+      allow_custom_column: true,
+      custom_columns: ['client', 'location'],
+      payload: {
+        start_date: '',
+        end_date: '',
+        date_key: '',
+        date_range: 'all',
+        report_keys: [],
+        send_email: false,
+        include_deleted: false,
+      },
+      preview: '/api/v1/reports/client_locations?output=json',
+      supports_previews: true,
     },
   ];
   return reports;

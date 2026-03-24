@@ -29,6 +29,7 @@ import { recurringinvoiceMap } from '$app/common/constants/exports/recurring-inv
 import { usePreferences } from '$app/common/hooks/usePreferences';
 import { Identifier } from '../useReports';
 import { contactMap } from '$app/common/constants/exports/contact-map';
+import { locationMap } from '$app/common/constants/exports/location-map';
 import { useColorScheme } from '$app/common/colors';
 import { Entity } from '$app/common/hooks/useEntityCustomFields';
 import { invoiceMap } from '$app/common/constants/exports/invoice-map';
@@ -37,7 +38,7 @@ import { customField } from '$app/components/CustomField';
 import { DoubleChevronRight } from '$app/components/icons/DoubleChevronRight';
 import { XMark } from '$app/components/icons/XMark';
 
-export const reportColumn = 11;
+export const reportColumn = 12;
 
 export function useTranslationAlias() {
   const [t] = useTranslation();
@@ -233,6 +234,7 @@ const positions = [
   'expense',
   'recurring_invoice',
   'contact',
+  'location',
 ] as const;
 
 export function useColumns({ report, columns }: Props) {
@@ -274,6 +276,7 @@ export function useColumns({ report, columns }: Props) {
         : recurringinvoiceMap
       : [],
     columns.includes('contact') ? contactMap : [],
+    columns.includes('location') ? locationMap : [],
     [],
   ];
 
@@ -557,6 +560,23 @@ export function SortableColumns({ report, columns }: Props) {
                   )}
                   data={data[10]}
                   droppableId="10"
+                  isDropDisabled={true}
+                />
+              )}
+
+              {columns.includes('location') && (
+                <Column
+                  title={() => (
+                    <div className="flex justify-between items-center">
+                      <span style={{ color: colors.$3 }}>{t('location')}</span>
+
+                      <button type="button" onClick={() => onAddAll(11)}>
+                        <DoubleChevronRight size="0.85rem" color={colors.$3} />
+                      </button>
+                    </div>
+                  )}
+                  data={data[11]}
+                  droppableId="11"
                   isDropDisabled={true}
                 />
               )}

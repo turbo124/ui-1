@@ -134,6 +134,7 @@ const ReportFields: Record<Identifier, Field[]> = {
   tax_summary_report: [],
   tax_period_report: ['is_income_billed'],
   user_sales_report: [],
+  client_location: ['include_deleted'],
 };
 
 interface Params {
