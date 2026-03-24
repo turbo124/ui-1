@@ -136,7 +136,7 @@ export function useReports() {
       label: 'credit',
       endpoint: '/api/v1/reports/credits',
       allow_custom_column: true,
-      custom_columns: ['client', 'credit', 'payment'],
+      custom_columns: ['client', 'credit', 'payment', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -199,7 +199,7 @@ export function useReports() {
       label: 'invoice',
       endpoint: '/api/v1/reports/invoices',
       allow_custom_column: true,
-      custom_columns: ['client', 'invoice', 'payment'],
+      custom_columns: ['client', 'invoice', 'payment', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -220,7 +220,7 @@ export function useReports() {
       label: 'invoice_item',
       endpoint: '/api/v1/reports/invoice_items',
       allow_custom_column: true,
-      custom_columns: ['client', 'invoice', 'payment', 'item'],
+      custom_columns: ['client', 'invoice', 'payment', 'item', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -242,7 +242,7 @@ export function useReports() {
       label: 'purchase_order',
       endpoint: '/api/v1/reports/purchase_orders',
       allow_custom_column: true,
-      custom_columns: ['vendor', 'purchase_order'],
+      custom_columns: ['vendor', 'purchase_order', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -262,7 +262,7 @@ export function useReports() {
       label: 'purchase_order_item',
       endpoint: '/api/v1/reports/purchase_order_items',
       allow_custom_column: true,
-      custom_columns: ['vendor', 'purchase_order', 'item'],
+      custom_columns: ['vendor', 'purchase_order', 'item', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -283,7 +283,7 @@ export function useReports() {
       label: 'quote',
       endpoint: '/api/v1/reports/quotes',
       allow_custom_column: true,
-      custom_columns: ['client', 'quote'],
+      custom_columns: ['client', 'quote', 'location'],
       payload: {
         start_date: '',
         end_date: '',
@@ -304,7 +304,7 @@ export function useReports() {
       label: 'quote_item',
       endpoint: '/api/v1/reports/quote_items',
       allow_custom_column: true,
-      custom_columns: ['client', 'quote', 'item'],
+      custom_columns: ['client', 'quote', 'item', 'location'],
       payload: {
         start_date: '',
         end_date: '',

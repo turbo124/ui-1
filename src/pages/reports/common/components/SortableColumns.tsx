@@ -241,7 +241,13 @@ export function useColumns({ report, columns }: Props) {
   const { preferences } = usePreferences();
 
   const defaultColumns = [
-    columns.includes('client') ? clientMap : [],
+    columns.includes('client')
+      ? clientMap.concat(
+          columns.includes('location')
+            ? locationMap.map((r) => ({ ...r, map: 'client' }))
+            : []
+        )
+      : [],
     columns.includes('invoice')
       ? columns.includes('item')
         ? invoiceMap.concat(itemMap.map((i) => ({ ...i, origin: 'invoice' })))
@@ -258,7 +264,13 @@ export function useColumns({ report, columns }: Props) {
         : quoteMap
       : [],
     columns.includes('payment') ? paymentMap : [],
-    columns.includes('vendor') ? vendorMap : [],
+    columns.includes('vendor')
+      ? vendorMap.concat(
+          columns.includes('location')
+            ? locationMap.map((r) => ({ ...r, map: 'vendor' }))
+            : []
+        )
+      : [],
     columns.includes('purchase_order')
       ? columns.includes('item')
         ? purchaseorderMap.concat(
@@ -276,7 +288,11 @@ export function useColumns({ report, columns }: Props) {
         : recurringinvoiceMap
       : [],
     columns.includes('contact') ? contactMap : [],
-    columns.includes('location') ? locationMap : [],
+    columns.includes('location') &&
+    !columns.includes('client') &&
+    !columns.includes('vendor')
+      ? locationMap
+      : [],
     [],
   ];
 
@@ -564,7 +580,9 @@ export function SortableColumns({ report, columns }: Props) {
                 />
               )}
 
-              {columns.includes('location') && (
+              {columns.includes('location') &&
+                !columns.includes('client') &&
+                !columns.includes('vendor') && (
                 <Column
                   title={() => (
                     <div className="flex justify-between items-center">
