@@ -36,6 +36,7 @@ export interface Preferences {
     range: string;
     currency: number;
     include_drafts: boolean;
+    active_tab?: number;
   };
   datatables: {
     clients: {
