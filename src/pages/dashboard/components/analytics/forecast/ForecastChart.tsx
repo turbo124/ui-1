@@ -98,7 +98,7 @@ export function ForecastChart(props: Props) {
 
         <div className="space-y-1">
           <div className="flex justify-between space-x-6">
-            <span style={{ color: COLORS.oi }}>{t('outstanding_invoices')}</span>
+            <span style={{ color: COLORS.oi }}>{t('total_outstanding_invoices')}</span>
             <span className="font-mono">
               {fmt(bucket?.inflows.outstanding_invoices.amount || 0)}
               <span className="text-gray-400 ml-1">
