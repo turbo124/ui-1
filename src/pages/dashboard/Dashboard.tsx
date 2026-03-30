@@ -33,6 +33,7 @@ import { DashboardToolbar } from './components/DashboardToolbar';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
 import { CashFlowForecast } from './components/analytics/forecast/CashFlowForecast';
 import { ClientPaymentAnalytics } from './components/analytics/client-risk/ClientPaymentAnalytics';
+import { ProjectAnalytics } from './components/analytics/projects/ProjectAnalytics';
 import { GLOBAL_DATE_RANGES } from './helpers/helpers';
 
 interface Currency {
@@ -131,7 +132,7 @@ export default function Dashboard() {
       />
 
       <TabGroup
-        tabs={[t('overview'), t('analytics'), t('forecast'), t('client_risk')]}
+        tabs={[t('overview'), t('analytics'), t('forecast'), t('client_risk'), t('projects')]}
         defaultTabIndex={activeTab}
         onTabChange={(index) =>
           update('preferences.dashboard_charts.active_tab', index)
@@ -202,6 +203,10 @@ export default function Dashboard() {
           {activeTab === 3 && (
             <ClientPaymentAnalytics body={body} />
           )}
+        </div>
+
+        <div>
+          {activeTab === 4 && <ProjectAnalytics body={body} />}
         </div>
       </TabGroup>
     </Default>

@@ -12,6 +12,7 @@ import { useCurrentCompanyDateFormats } from '$app/common/hooks/useCurrentCompan
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { date as formatDate } from '$app/common/helpers';
+import dayjs from 'dayjs';
 import {
   Line,
   Area,
@@ -37,6 +38,8 @@ interface ChartDataPoint {
 
 type YAxisFormat = 'money' | 'days' | 'percent';
 
+type ChartSensitivity = 'day' | 'week' | 'month';
+
 interface Props {
   title: string;
   data: TimeSeriesPoint[];
@@ -44,11 +47,12 @@ interface Props {
   chartType?: 'line' | 'area';
   yAxisFormat: YAxisFormat;
   color: string;
+  chartSensitivity?: ChartSensitivity;
 }
 
 export function AnalyticsChart(props: Props) {
   const [t] = useTranslation();
-  const { chartType = 'line', yAxisFormat, color } = props;
+  const { chartType = 'line', yAxisFormat, color, chartSensitivity = 'month' } = props;
 
   const company = useCurrentCompany();
   const { dateFormat } = useCurrentCompanyDateFormats();
@@ -58,11 +62,45 @@ export function AnalyticsChart(props: Props) {
   const chartData: ChartDataPoint[] = useMemo(() => {
     if (!props.data) return [];
 
-    return props.data.map((point) => ({
-      date: formatDate(point.date, dateFormat),
+    const raw = props.data.map((point) => ({
+      date: point.date,
       value: parseFloat(point.total) || 0,
     }));
-  }, [props.data, dateFormat]);
+
+    if (chartSensitivity === 'day') {
+      return raw.map((p) => ({
+        date: formatDate(p.date, dateFormat),
+        value: p.value,
+      }));
+    }
+
+    const buckets = new Map<string, { sum: number; count: number }>();
+
+    raw.forEach((point) => {
+      const d = dayjs(point.date);
+      const key =
+        chartSensitivity === 'week'
+          ? d.startOf('week').format('YYYY-MM-DD')
+          : d.format('YYYY-MM');
+
+      const existing = buckets.get(key);
+      if (existing) {
+        existing.sum += point.value;
+        existing.count += 1;
+      } else {
+        buckets.set(key, { sum: point.value, count: 1 });
+      }
+    });
+
+    const isAverage = yAxisFormat === 'days' || yAxisFormat === 'percent';
+
+    return Array.from(buckets.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, { sum, count }]) => ({
+        date: formatDate(key, dateFormat),
+        value: isAverage ? sum / count : sum,
+      }));
+  }, [props.data, dateFormat, chartSensitivity]);
 
   const formatValue = (value: number): string => {
     switch (yAxisFormat) {

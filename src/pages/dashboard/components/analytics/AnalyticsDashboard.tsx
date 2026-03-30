@@ -30,6 +30,8 @@ export function AnalyticsDashboard(props: Props) {
   const settings = useReactSettings();
 
   const currency = settings?.preferences?.dashboard_charts?.currency || 1;
+  const chartScale =
+    settings?.preferences?.dashboard_charts?.default_view || 'month';
   const includeDrafts =
     settings?.preferences?.dashboard_charts?.include_drafts || false;
 
@@ -84,6 +86,7 @@ export function AnalyticsDashboard(props: Props) {
       <AnalyticsChartsGrid
         data={summaryData}
         currency={currency.toString()}
+        chartSensitivity={chartScale}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

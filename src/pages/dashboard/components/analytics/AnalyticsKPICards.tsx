@@ -17,6 +17,7 @@ import { Badge } from '$app/components/Badge';
 import {
   AnalyticsTotalsCurrencyData,
   AgingTotals,
+  RecurringExpensesTotals,
 } from './interfaces';
 
 interface Props {
@@ -99,10 +100,34 @@ export function AnalyticsKPICards(props: Props) {
       color: '#22C55E',
       bgColor: '#22C55E26',
     },
+    {
+      label: t('recurring_expenses'),
+      value: formatMoney(
+        data?.recurring_expenses?.monthly_total || 0,
+        company?.settings.country_id,
+        currency,
+        2
+      ),
+      suffix: `/ ${t('month')}`,
+      color: '#F97316',
+      bgColor: '#F9731626',
+    },
+    {
+      label: t('net_mrr'),
+      value: formatMoney(
+        (data?.mrr?.mrr || 0) - (data?.recurring_expenses?.monthly_total || 0),
+        company?.settings.country_id,
+        currency,
+        2
+      ),
+      suffix: `/ ${t('month')}`,
+      color: '#1E293B',
+      bgColor: '#1E293B1A',
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mt-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mt-4">
       {kpis.map((kpi, index) => (
         <Card
           key={index}

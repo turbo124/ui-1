@@ -15,11 +15,12 @@ import { AnalyticsSummaryCurrencyData } from './interfaces';
 interface Props {
   data: AnalyticsSummaryCurrencyData | undefined;
   currency: string;
+  chartSensitivity: 'day' | 'week' | 'month';
 }
 
 export function AnalyticsChartsGrid(props: Props) {
   const [t] = useTranslation();
-  const { data, currency } = props;
+  const { data, currency, chartSensitivity } = props;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">
@@ -30,6 +31,7 @@ export function AnalyticsChartsGrid(props: Props) {
         chartType="line"
         yAxisFormat="money"
         color="#2176FF"
+        chartSensitivity={chartSensitivity}
       />
 
       <AnalyticsChart
@@ -39,6 +41,7 @@ export function AnalyticsChartsGrid(props: Props) {
         chartType="line"
         yAxisFormat="days"
         color="#F59E0B"
+        chartSensitivity={chartSensitivity}
       />
 
       <AnalyticsChart
@@ -48,6 +51,7 @@ export function AnalyticsChartsGrid(props: Props) {
         chartType="line"
         yAxisFormat="percent"
         color="#EF4444"
+        chartSensitivity={chartSensitivity}
       />
 
       <AnalyticsChart
@@ -57,6 +61,7 @@ export function AnalyticsChartsGrid(props: Props) {
         chartType="area"
         yAxisFormat="money"
         color="#22C55E"
+        chartSensitivity={chartSensitivity}
       />
     </div>
   );

@@ -10,6 +10,7 @@
 
 import { endpoint } from '$app/common/helpers';
 import { request } from '$app/common/helpers/request';
+import { useReactSettings } from '$app/common/hooks/useReactSettings';
 import { useQuery } from 'react-query';
 import { Spinner } from '$app/components/Spinner';
 import { ForecastKPICards } from './ForecastKPICards';
@@ -21,14 +22,30 @@ interface Props {
   body: { start_date: string; end_date: string; date_range: string };
 }
 
+const SCALE_TO_BUCKET: Record<string, string> = {
+  day: 'daily',
+  week: 'weekly',
+  month: 'monthly',
+};
+
 export function CashFlowForecast(props: Props) {
+  const settings = useReactSettings();
+
+  const chartScale =
+    settings?.preferences?.dashboard_charts?.default_view || 'month';
+
+  const requestBody = {
+    ...props.body,
+    bucket_type: SCALE_TO_BUCKET[chartScale] || 'monthly',
+  };
+
   const query = useQuery({
-    queryKey: ['/api/v1/charts/cashflow_forecast', props.body],
+    queryKey: ['/api/v1/charts/cashflow_forecast', requestBody],
     queryFn: () =>
       request(
         'POST',
         endpoint('/api/v1/charts/cashflow_forecast'),
-        props.body
+        requestBody
       ).then((response) => response.data as CashFlowForecastResponse),
     staleTime: Infinity,
   });

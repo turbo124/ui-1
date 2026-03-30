@@ -44,8 +44,16 @@ export interface PaymentAnalyticsTotals {
   late_payment_ratio: number;
 }
 
+export interface RecurringExpensesTotals {
+  monthly_total: number;
+  annual_total: number;
+  count: number;
+  currency_id?: number;
+}
+
 export interface AnalyticsTotalsCurrencyData {
   mrr: MRRTotals;
   aging: AgingTotals;
+  recurring_expenses?: RecurringExpensesTotals;
   payment_analytics?: PaymentAnalyticsTotals;
 }
