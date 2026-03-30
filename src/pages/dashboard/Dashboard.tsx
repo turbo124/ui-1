@@ -195,7 +195,7 @@ export default function Dashboard() {
         </div>
 
         <div>
-          {activeTab === 2 && <CashFlowForecast />}
+          {activeTab === 2 && <CashFlowForecast body={body} />}
         </div>
 
         <div>
