@@ -30,7 +30,8 @@ export interface ClientIndicators {
 }
 
 export interface ClientRiskEntry {
-  client_id: number;
+  client_id: string;
+  client_name: string;
   currency_id: number;
   avg_payment_days: number;
   stddev_payment_days: number;

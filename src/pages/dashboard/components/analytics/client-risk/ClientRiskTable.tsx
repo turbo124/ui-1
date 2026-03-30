@@ -8,15 +8,13 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '$app/common/colors';
 import { Card } from '$app/components/cards';
 import { Table, Thead, Tbody, Tr, Th, Td } from '$app/components/tables';
 import { Badge } from '$app/components/Badge';
 import { Link } from 'react-router-dom';
-import { useClientResolver } from '$app/common/hooks/clients/useClientResolver';
-import { Client } from '$app/common/interfaces/client';
 import { ClientRiskEntry, TrafficLight } from './interfaces';
 import { cloneDeep } from 'lodash';
 
@@ -53,26 +51,9 @@ type SortField =
 export function ClientRiskTable(props: Props) {
   const [t] = useTranslation();
   const colors = useColorScheme();
-  const clientResolver = useClientResolver();
 
-  const [clientNames, setClientNames] = useState<Record<number, string>>({});
   const [sortField, setSortField] = useState<SortField>('risk_score');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-
-  useEffect(() => {
-    (props.clients || []).forEach((entry) => {
-      if (!clientNames[entry.client_id]) {
-        clientResolver
-          .find(entry.client_id.toString())
-          .then((client: Client) => {
-            setClientNames((prev) => ({
-              ...prev,
-              [entry.client_id]: client.display_name || client.name || `#${entry.client_id}`,
-            }));
-          });
-      }
-    });
-  }, [props.clients]);
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -90,8 +71,8 @@ export function ClientRiskTable(props: Props) {
       let valB: number | string;
 
       if (sortField === 'client_name') {
-        valA = clientNames[a.client_id] || '';
-        valB = clientNames[b.client_id] || '';
+        valA = a.client_name || '';
+        valB = b.client_name || '';
         return sortDir === 'asc'
           ? (valA as string).localeCompare(valB as string)
           : (valB as string).localeCompare(valA as string);
@@ -182,7 +163,7 @@ export function ClientRiskTable(props: Props) {
                       className="hover:underline"
                       style={{ color: colors.$3 }}
                     >
-                      {clientNames[client.client_id] || `#${client.client_id}`}
+                      {client.client_name}
                     </Link>
                   </div>
                 </Td>
