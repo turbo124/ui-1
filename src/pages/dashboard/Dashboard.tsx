@@ -31,6 +31,8 @@ import { useCurrentUser } from '$app/common/hooks/useCurrentUser';
 import { TabGroup } from '$app/components/TabGroup';
 import { DashboardToolbar } from './components/DashboardToolbar';
 import { AnalyticsDashboard } from './components/analytics/AnalyticsDashboard';
+import { CashFlowForecast } from './components/analytics/forecast/CashFlowForecast';
+import { ClientPaymentAnalytics } from './components/analytics/client-risk/ClientPaymentAnalytics';
 import { GLOBAL_DATE_RANGES } from './helpers/helpers';
 
 interface Currency {
@@ -129,7 +131,7 @@ export default function Dashboard() {
       />
 
       <TabGroup
-        tabs={[t('overview'), t('analytics')]}
+        tabs={[t('overview'), t('analytics'), t('forecast'), t('client_risk')]}
         defaultTabIndex={activeTab}
         onTabChange={(index) =>
           update('preferences.dashboard_charts.active_tab', index)
@@ -189,6 +191,16 @@ export default function Dashboard() {
         <div>
           {activeTab === 1 && (
             <AnalyticsDashboard body={body} />
+          )}
+        </div>
+
+        <div>
+          {activeTab === 2 && <CashFlowForecast />}
+        </div>
+
+        <div>
+          {activeTab === 3 && (
+            <ClientPaymentAnalytics body={body} />
           )}
         </div>
       </TabGroup>
