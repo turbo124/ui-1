@@ -89,12 +89,12 @@ export function ForecastKPICards(props: Props) {
           style={{ borderColor: colors.$24 }}
           withoutBodyPadding
         >
-          <div className="flex flex-col p-4">
-            <span className="text-sm text-gray-500">{kpi.label}</span>
-            <div className="flex items-baseline space-x-1 mt-1">
+          <div className="flex flex-col p-4 min-w-0">
+            <span className="text-sm text-gray-500 truncate">{kpi.label}</span>
+            <div className="flex items-baseline space-x-1 mt-1 min-w-0">
               <Badge style={{ backgroundColor: kpi.bgColor }}>
                 <span
-                  className="text-lg font-mono font-semibold"
+                  className="text-lg font-mono font-semibold whitespace-nowrap"
                   style={{ color: kpi.color }}
                 >
                   {kpi.value}

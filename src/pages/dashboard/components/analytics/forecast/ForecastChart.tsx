@@ -80,6 +80,21 @@ export function ForecastChart(props: Props) {
       0
     ).toString();
 
+  const yAxisWidth = useMemo(() => {
+    const allValues = chartData.flatMap((d) => [
+      d.outstanding_invoices + d.recurring_invoices + d.quote_pipeline,
+      d.recurring_expenses + d.one_off_expenses,
+      d.weighted_net,
+    ]);
+
+    const largestTick = allValues.reduce((max, v) => {
+      const len = fmt(v).length;
+      return Math.max(max, len);
+    }, 0);
+
+    return largestTick ? largestTick * 8.5 : undefined;
+  }, [chartData]);
+
   const CustomTooltip = ({
     active,
     payload,
@@ -168,7 +183,7 @@ export function ForecastChart(props: Props) {
       withoutHeaderPadding
     >
       <ResponsiveContainer width="100%" height={350}>
-        <ComposedChart data={chartData} margin={{ top: 17, left: 5 }}>
+        <ComposedChart data={chartData} margin={{ top: 17, left: 10 }}>
           <CartesianGrid strokeDasharray="0" vertical={false} />
 
           <XAxis
@@ -182,6 +197,7 @@ export function ForecastChart(props: Props) {
               fmt(value).replace(/ /g, '\u00A0')
             }
             tick={{ fontSize: 14 }}
+            width={yAxisWidth}
             stroke={colors.$3}
           />
 

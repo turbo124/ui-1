@@ -114,18 +114,18 @@ export function CompanySummaryCards(props: Props) {
           style={{ borderColor: colors.$24 }}
           withoutBodyPadding
         >
-          <div className="flex flex-col p-4">
-            <span className="text-sm text-gray-500">{card.label}</span>
+          <div className="flex flex-col p-4 min-w-0">
+            <span className="text-sm text-gray-500 truncate">{card.label}</span>
 
-            <div className="flex items-baseline space-x-2 mt-2">
+            <div className="flex items-baseline space-x-2 mt-2 min-w-0">
               <span
-                className="text-2xl font-mono font-semibold"
+                className="text-2xl font-mono font-semibold whitespace-nowrap"
                 style={{ color: colors.$3 }}
               >
                 {card.value}
               </span>
               {card.suffix && (
-                <span className="text-xs text-gray-400">{card.suffix}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap">{card.suffix}</span>
               )}
             </div>
 

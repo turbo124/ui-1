@@ -165,7 +165,7 @@ export function AnalyticsChart(props: Props) {
 
   const sharedProps = {
     data: chartData,
-    margin: { top: 17, left: 5 },
+    margin: { top: 17, left: 10 },
   };
 
   const sharedAxisProps = {
