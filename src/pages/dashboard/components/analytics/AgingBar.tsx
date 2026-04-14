@@ -85,7 +85,6 @@ export function AgingBar(props: Props) {
         <div className="space-y-3">
           {AGING_BUCKETS.map((bucket) => {
             const value = data?.[bucket.key] || 0;
-            const percent = total > 0 ? ((value / total) * 100).toFixed(0) : '0';
 
             return (
               <div
@@ -102,7 +101,7 @@ export function AgingBar(props: Props) {
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center">
                   <span className="text-sm font-mono" style={{ color: colors.$3 }}>
                     {formatMoney(
                       value,
@@ -110,9 +109,6 @@ export function AgingBar(props: Props) {
                       currency,
                       2
                     )}
-                  </span>
-                  <span className="text-sm text-gray-400 w-10 text-right">
-                    {percent}%
                   </span>
                 </div>
               </div>
@@ -124,11 +120,11 @@ export function AgingBar(props: Props) {
             style={{ borderColor: colors.$21 }}
           >
             <span className="text-sm font-medium" style={{ color: colors.$3 }}>
-              {t('total')} {t('outstanding')}
+              {t('total')} {t('outstanding')} ({data?.outstanding_count ?? 0})
             </span>
             <span className="text-sm font-mono font-semibold" style={{ color: colors.$3 }}>
               {formatMoney(
-                total,
+                data?.total || 0,
                 company?.settings.country_id,
                 currency,
                 2

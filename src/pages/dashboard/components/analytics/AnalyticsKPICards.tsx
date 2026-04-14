@@ -14,27 +14,11 @@ import { useCurrentCompany } from '$app/common/hooks/useCurrentCompany';
 import { useColorScheme } from '$app/common/colors';
 import { Card } from '$app/components/cards';
 import { Badge } from '$app/components/Badge';
-import {
-  AnalyticsTotalsCurrencyData,
-  AgingTotals,
-  RecurringExpensesTotals,
-} from './interfaces';
+import { AnalyticsTotalsCurrencyData } from './interfaces';
 
 interface Props {
   data: AnalyticsTotalsCurrencyData | undefined;
   currency: string;
-}
-
-function totalOutstanding(aging: AgingTotals | undefined): number {
-  if (!aging) return 0;
-  return (
-    aging.current_amount +
-    aging.age_0_30 +
-    aging.age_31_60 +
-    aging.age_61_90 +
-    aging.age_91_120 +
-    aging.age_120_plus
-  );
 }
 
 export function AnalyticsKPICards(props: Props) {
@@ -89,18 +73,6 @@ export function AnalyticsKPICards(props: Props) {
       bgColor: '#EF444426',
     },
     {
-      label: t('outstanding'),
-      value: formatMoney(
-        totalOutstanding(data?.aging),
-        company?.settings.country_id,
-        currency,
-        2
-      ),
-      suffix: '',
-      color: '#22C55E',
-      bgColor: '#22C55E26',
-    },
-    {
       label: t('recurring_expenses'),
       value: formatMoney(
         data?.recurring_expenses?.monthly_total || 0,
@@ -127,7 +99,7 @@ export function AnalyticsKPICards(props: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mt-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mt-4">
       {kpis.map((kpi, index) => (
         <Card
           key={index}

@@ -27,12 +27,14 @@ export interface MRRTotals {
 }
 
 export interface AgingTotals {
+  total: number;
   current_amount: number;
   age_0_30: number;
   age_31_60: number;
   age_61_90: number;
   age_91_120: number;
   age_120_plus: number;
+  outstanding_count: number;
   currency_id?: number;
 }
 
