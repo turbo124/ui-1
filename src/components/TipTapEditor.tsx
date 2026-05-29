@@ -695,10 +695,6 @@ const EditorWrapper = styled.div<{ theme: ThemeProps }>`
   }
 `;
 
-const HiddenFileInput = styled.input`
-  display: none;
-`;
-
 function ToolbarButtonComponent({
   onClick,
   isActive,
@@ -978,12 +974,13 @@ export function TipTapEditor({
   const [t] = useTranslation();
 
   const colors = useColorScheme();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [linkUrl, setLinkUrl] = useState<string>('');
   const [htmlCode, setHtmlCode] = useState<string>('');
   const [htmlModal, setHtmlModal] = useState<boolean>(false);
   const [linkModal, setLinkModal] = useState<boolean>(false);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageModal, setImageModal] = useState<boolean>(false);
   const [textColor, setTextColor] = useState<string>('#000000');
   const [currentValue, setCurrentValue] = useState<string | undefined>();
   const [backgroundColor, setBackgroundColor] = useState<string>('#FFFF00');
@@ -1116,28 +1113,22 @@ export function TipTapEditor({
     setLinkUrl('');
   }, [editor]);
 
-  const handleImageUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      if (!editor) return;
+  const openImageModal = useCallback(() => {
+    setImageUrl('');
+    setImageModal(true);
+  }, []);
 
-      const file = event.target.files?.[0];
-      if (!file) return;
+  const insertImage = useCallback(() => {
+    if (!editor) return;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const src = e.target?.result as string;
-        if (src) {
-          editor.chain().focus().setImage({ src }).run();
-        }
-      };
-      reader.readAsDataURL(file);
+    const src = imageUrl.trim();
+    if (src) {
+      editor.chain().focus().setImage({ src }).run();
+    }
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    },
-    [editor]
-  );
+    setImageModal(false);
+    setImageUrl('');
+  }, [editor, imageUrl]);
 
   const openHtmlEditor = useCallback(() => {
     if (!editor) return;
@@ -1607,13 +1598,7 @@ export function TipTapEditor({
         </ToolbarSection>
 
         <ToolbarSection>
-          <HiddenFileInput
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-          />
-          <ToolbarButtonComponent onClick={() => fileInputRef.current?.click()}>
+          <ToolbarButtonComponent onClick={openImageModal}>
             <Icon element={FaImage} size={16} style={{ color: colors.$3 }} />
           </ToolbarButtonComponent>
           <ToolbarDividerComponent />
@@ -1673,6 +1658,27 @@ export function TipTapEditor({
           )}
 
           <Button onClick={insertLink}>{t('apply')}</Button>
+        </div>
+      </Modal>
+
+      <Modal
+        title={t('image')}
+        visible={imageModal}
+        onClose={() => setImageModal(false)}
+      >
+        <InputField
+          label={t('url')}
+          value={imageUrl}
+          onValueChange={(value) => setImageUrl(value)}
+          placeholder="https://example.com/image.png"
+        />
+
+        <div className="flex gap-2 justify-end mt-4">
+          <Button type="minimal" onClick={() => setImageModal(false)}>
+            {t('cancel')}
+          </Button>
+
+          <Button onClick={insertImage}>{t('apply')}</Button>
         </div>
       </Modal>
 
