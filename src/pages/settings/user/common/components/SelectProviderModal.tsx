@@ -23,13 +23,13 @@ import {
   resetChanges,
   updateRecord,
 } from '$app/common/stores/slices/company-users';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 
 export function SelectProviderModal() {
   const [t] = useTranslation();
   const dispatch = useDispatch();
 
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
   const company = useCurrentCompany();
 
   const [isMailerConnected, setIsMailerConnected] = useAtom(connectMailerAtom);

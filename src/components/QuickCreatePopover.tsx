@@ -8,7 +8,7 @@ import { useQuickCreateActions } from '$app/common/hooks/entities/useQuickCreate
 import { isHosted, isSelfHosted } from '$app/common/helpers';
 import { useColorScheme } from '$app/common/colors';
 import { styled } from 'styled-components';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { usePreventNavigation } from '$app/common/hooks/usePreventNavigation';
 import { Icon } from './icons/Icon';
 
@@ -40,7 +40,7 @@ export function QuickCreatePopover() {
   const actions = useQuickCreateActions();
   const sections = useQuickCreateSections();
 
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
 
   const isMiniSidebar = Boolean(
     user?.company_user?.react_settings.show_mini_sidebar

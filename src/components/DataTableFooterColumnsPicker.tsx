@@ -25,7 +25,7 @@ import { $refetch } from '$app/common/hooks/useRefetch';
 import { resetChanges, updateUser } from '$app/common/stores/slices/user';
 import { useDispatch } from 'react-redux';
 import { CompanyUser } from '$app/common/interfaces/company-user';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { toast } from '$app/common/helpers/toast/toast';
 import { User } from '$app/common/interfaces/user';
 import { TableColumns } from './icons/TableColumns';
@@ -45,7 +45,7 @@ export function DataTableFooterColumnsPicker(props: Props) {
   const handleCurrentUserChangeProperty = useHandleCurrentUserChangeProperty();
 
   const colors = useColorScheme();
-  const userChanges = useInjectUserChanges();
+  const userChanges = useUserChanges();
 
   const [isFormBusy, setIsFormBusy] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);

@@ -13,7 +13,7 @@ import { HelpSidebarIcons } from '$app/components/HelpSidebarIcons';
 import { SidebarItem } from './SidebarItem';
 import { useColorScheme } from '$app/common/colors';
 import { Tooltip } from '$app/components/Tooltip';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import classNames from 'classnames';
 
 interface SubNavigationItem {
@@ -50,7 +50,7 @@ interface Props {
 }
 
 export function DesktopSidebar(props: Props) {
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
 
   const isMiniSidebar = Boolean(
     user?.company_user?.react_settings.show_mini_sidebar

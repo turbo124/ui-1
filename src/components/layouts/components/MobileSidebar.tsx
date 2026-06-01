@@ -15,7 +15,7 @@ import { X } from 'react-feather';
 import { NavigationItem } from './DesktopSidebar';
 import { SidebarItem } from './SidebarItem';
 import { useColorScheme } from '$app/common/colors';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { HelpSidebarIcons } from '$app/components/HelpSidebarIcons';
 
 interface Props {
@@ -26,7 +26,7 @@ interface Props {
 
 export function MobileSidebar(props: Props) {
   const colors = useColorScheme();
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
 
   const isMiniSidebar = Boolean(
     user?.company_user?.react_settings.show_mini_sidebar

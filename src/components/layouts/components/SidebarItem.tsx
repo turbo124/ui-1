@@ -11,7 +11,7 @@
 import { NavigationItem } from './DesktopSidebar';
 import { styled } from 'styled-components';
 import { useColorScheme } from '$app/common/colors';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { useThemeColorScheme } from '$app/pages/settings/user/components/StatusColorTheme';
 import classNames from 'classnames';
 import { Link } from '$app/components/forms';
@@ -40,7 +40,7 @@ export function SidebarItem(props: Props) {
   const { item } = props;
 
   const colors = useColorScheme();
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
   const themeColors = useThemeColorScheme();
 
   const isMiniSidebar = Boolean(

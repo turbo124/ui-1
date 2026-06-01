@@ -12,7 +12,7 @@ import { Modal } from '$app/components/Modal';
 import { Button } from '$app/components/forms';
 import { ReactNode, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInjectUserChanges } from './useInjectUserChanges';
+import { useUserChanges } from './useInjectUserChanges';
 import { ReactSettings, useReactSettings } from './useReactSettings';
 import { useDispatch, useStore } from 'react-redux';
 import { resetChanges, updateChanges, updateUser } from '../stores/slices/user';
@@ -62,7 +62,7 @@ interface SaveOptions {
 
 export function usePreferences() {
   const currentUser = useCurrentUser();
-  const user = useInjectUserChanges({ overwrite: false });
+  const user = useUserChanges();
 
   const [t] = useTranslation();
 

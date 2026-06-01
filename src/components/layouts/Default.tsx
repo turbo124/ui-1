@@ -33,7 +33,7 @@ import { ActivateCompany } from '../banners/ActivateCompany';
 import { VerifyPhone } from '../banners/VerifyPhone';
 import { useColorScheme } from '$app/common/colors';
 import { Search } from '$app/pages/dashboard/components/Search';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { useAtomValue } from 'jotai';
 import { usePreventNavigation } from '$app/common/hooks/usePreventNavigation';
 import { Notifications } from '../Notifications';
@@ -74,7 +74,7 @@ export function Default(props: Props) {
 
   const preventNavigation = usePreventNavigation();
 
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
   const companyUser = useCurrentCompanyUser();
 
   const isMiniSidebar = Boolean(

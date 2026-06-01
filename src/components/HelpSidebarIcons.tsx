@@ -26,7 +26,7 @@ import Toggle from './forms/Toggle';
 import { Modal } from './Modal';
 import { toast } from '$app/common/helpers/toast/toast';
 import { useColorScheme } from '$app/common/colors';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
+import { useUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import classNames from 'classnames';
 import { AboutModal } from './AboutModal';
 import { Icon } from './icons/Icon';
@@ -57,7 +57,7 @@ export function HelpSidebarIcons(props: Props) {
   const [t] = useTranslation();
 
   const colors = useColorScheme();
-  const user = useInjectUserChanges();
+  const user = useUserChanges();
   const account = useCurrentAccount();
 
   const reactSettings = useReactSettings();

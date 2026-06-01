@@ -34,7 +34,6 @@ import {
   ReactTableColumns,
   useReactSettings,
 } from '$app/common/hooks/useReactSettings';
-import { useInjectUserChanges } from '$app/common/hooks/useInjectUserChanges';
 import { $refetch } from '$app/common/hooks/useRefetch';
 import { createPortal } from 'react-dom';
 import { TableColumns } from './icons/TableColumns';
@@ -58,7 +57,6 @@ export function DataTableColumnsPicker(props: Props) {
   const [t] = useTranslation();
   const { table, defaultColumns } = props;
 
-  useInjectUserChanges();
 
   const colors = useColorScheme();
   const reactSettings = useReactSettings();

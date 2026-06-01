@@ -11,10 +11,10 @@
 import { useUpdateCompanyUser } from '$app/pages/settings/user/common/hooks/useUpdateCompanyUser';
 import { cloneDeep, set } from 'lodash';
 import { useHandleCurrentUserChangeProperty } from './useHandleCurrentUserChange';
-import { useInjectUserChanges } from './useInjectUserChanges';
+import { useUserChanges } from './useInjectUserChanges';
 
 export function useHandleDarkLightMode() {
-  const userChanges = useInjectUserChanges();
+  const userChanges = useUserChanges();
 
   const updateCompanyUser = useUpdateCompanyUser();
   const handleUserChange = useHandleCurrentUserChangeProperty();

@@ -9,7 +9,7 @@
  */
 
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { injectInChanges } from '../stores/slices/user';
 import { useCurrentUser } from './useCurrentUser';
 import { RootState } from '../stores/store';
@@ -25,12 +25,14 @@ interface Options {
   overwrite?: boolean;
 }
 
-export function useInjectUserChanges(options?: Options) {
+export function useInjectUserChanges(options?: Options): void {
   const user = useCurrentUser();
   const dispatch = useDispatch();
-  const changes = useUserChanges();
+  const store = useStore<RootState>();
 
   useEffect(() => {
+    const changes = store.getState().user.changes;
+
     if (Object.keys(changes || {}).length && !options?.overwrite) {
       // We don't want to overwrite existing changes,
       // so let's just not inject anything if we already have a value,
@@ -41,6 +43,4 @@ export function useInjectUserChanges(options?: Options) {
 
     dispatch(injectInChanges());
   }, [user]);
-
-  return changes;
 }

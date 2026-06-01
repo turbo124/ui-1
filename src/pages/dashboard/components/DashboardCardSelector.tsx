@@ -198,7 +198,7 @@ export function DashboardCardSelector() {
 
   const colors = useColorScheme();
   const currentUser = useCurrentUser();
-  const reactSettings = useReactSettings({ overwrite: false });
+  const reactSettings = useReactSettings();
 
   const fieldsRef = useRef<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
