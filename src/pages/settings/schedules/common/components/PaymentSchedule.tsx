@@ -24,6 +24,10 @@ import Toggle from '$app/components/forms/Toggle';
 import { AddScheduleModal } from './AddScheduleModal';
 import { useInvoiceQuery } from '$app/common/queries/invoices';
 import { useCurrentCompanyDateFormats } from '$app/common/hooks/useCurrentCompanyDateFormats';
+import {
+    calculateScheduleRemaining,
+    getInvoicePaymentScheduleAmount,
+} from '../helpers/payment-schedule';
 
 
 interface Props {
@@ -71,6 +75,22 @@ export function PaymentSchedule(props: Props) {
     // Local error state for the modal
     const [modalErrors, setModalErrors] = useState<ValidationBag | undefined>(undefined);
 
+    const updateScheduleCompletion = (currentSchedules: ScheduleParams[]) => {
+        if (currentSchedules.length === 0) {
+            setIsComplete(false);
+            setRemainingAmount(0);
+            return;
+        }
+
+        const remaining = calculateScheduleRemaining({
+            schedules: currentSchedules,
+            invoice: selectedInvoice,
+        });
+
+        setIsComplete(remaining <= 0);
+        setRemainingAmount(remaining);
+    };
+
     // Initialize schedules and invoice from props
     useEffect(() => {
         if (schedule?.parameters?.schedule) {
@@ -87,56 +107,7 @@ export function PaymentSchedule(props: Props) {
 
     // Update isComplete and remainingAmount when schedules change
     useEffect(() => {
-        if (schedules.length === 0) {
-            setIsComplete(false);
-            setRemainingAmount(0);
-            return;
-        }
-
-        if (!selectedInvoice) {
-            // No invoice selected - calculate remaining based on schedules
-            const isAmountMode = schedules[0]?.is_amount ?? true;
-            
-            if (isAmountMode) {
-                // For amount mode, estimate remaining based on total scheduled
-                const totalScheduled = schedules.reduce((sum, s) => sum + s.amount, 0);
-                // Assume a reasonable remaining amount (e.g., 10% of total scheduled)
-                const estimatedTotal = totalScheduled / 0.9; // If 90% is scheduled, 10% remains
-                const remaining = Math.max(0, estimatedTotal - totalScheduled);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            } else {
-                // For percentage mode, calculate remaining percentage
-                const totalPercentage = schedules.reduce((sum, s) => sum + s.amount, 0);
-                const remaining = Math.max(0, 100 - totalPercentage);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            }
-            return;
-        }
-
-        // Calculate remaining amount with invoice
-        const isAmountMode = schedules[0]?.is_amount ?? true;
-        const totalAmount = selectedInvoice.amount;
-        
-        const scheduledAmount = schedules.reduce((sum, s) => {
-            if (s.is_amount !== isAmountMode) {
-                return sum + (isAmountMode 
-                    ? (s.amount * totalAmount / 100)
-                    : (s.amount / totalAmount * 100)
-                );
-            }
-            return sum + s.amount;
-        }, 0);
-        
-        const remaining = isAmountMode 
-            ? Number((totalAmount - scheduledAmount).toFixed(2))
-            : Number((100 - scheduledAmount).toFixed(0));
-        
-        setIsComplete(remaining <= 0);
-        setRemainingAmount(remaining);
+        updateScheduleCompletion(schedules);
     }, [schedules, selectedInvoice]);
 
     // Enhanced schedule object for the modal
@@ -151,7 +122,7 @@ export function PaymentSchedule(props: Props) {
     // Format entity label
     const formatEntityLabel = (entity: Invoice) => {
         return `${entity.number} (${formatMoney(
-            entity.amount,
+            getInvoicePaymentScheduleAmount(entity),
             entity?.client?.country_id,
             entity?.client?.settings.currency_id
         )})`;
@@ -179,53 +150,7 @@ export function PaymentSchedule(props: Props) {
         // Update local state
         setSchedules(updatedSchedules);
         
-        // Immediately update isComplete and remainingAmount
-        if (updatedSchedules.length === 0) {
-            setIsComplete(false);
-            setRemainingAmount(0);
-        } else if (!selectedInvoice) {
-            // No invoice selected - calculate remaining based on schedules
-            const isAmountMode = updatedSchedules[0]?.is_amount ?? true;
-            
-            if (isAmountMode) {
-                // For amount mode, estimate remaining based on total scheduled
-                const totalScheduled = updatedSchedules.reduce((sum, s) => sum + s.amount, 0);
-                // Assume a reasonable remaining amount (e.g., 10% of total scheduled)
-                const estimatedTotal = totalScheduled / 0.9; // If 90% is scheduled, 10% remains
-                const remaining = Math.max(0, estimatedTotal - totalScheduled);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            } else {
-                // For percentage mode, calculate remaining percentage
-                const totalPercentage = updatedSchedules.reduce((sum, s) => sum + s.amount, 0);
-                const remaining = Math.max(0, 100 - totalPercentage);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            }
-        } else {
-            // Calculate remaining amount with invoice
-            const isAmountMode = updatedSchedules[0]?.is_amount ?? true;
-            const totalAmount = selectedInvoice.amount;
-            
-            const scheduledAmount = updatedSchedules.reduce((sum, s) => {
-                if (s.is_amount !== isAmountMode) {
-                    return sum + (isAmountMode 
-                        ? (s.amount * totalAmount / 100)
-                        : (s.amount / totalAmount * 100)
-                    );
-                }
-                return sum + s.amount;
-            }, 0);
-            
-            const remaining = isAmountMode 
-                ? Number((totalAmount - scheduledAmount).toFixed(2))
-                : Number((100 - scheduledAmount).toFixed(0));
-            
-            setIsComplete(remaining <= 0);
-            setRemainingAmount(remaining);
-        }
+        updateScheduleCompletion(updatedSchedules);
         
         // Update parent
         const currentParameters: PaymentScheduleParameters = {
@@ -273,53 +198,7 @@ export function PaymentSchedule(props: Props) {
         // Update local state
         setSchedules(newSchedules);
         
-        // Immediately update isComplete and remainingAmount
-        if (newSchedules.length === 0) {
-            setIsComplete(false);
-            setRemainingAmount(0);
-        } else if (!selectedInvoice) {
-            // No invoice selected - calculate remaining based on schedules
-            const isAmountMode = newSchedules[0]?.is_amount ?? true;
-            
-            if (isAmountMode) {
-                // For amount mode, estimate remaining based on total scheduled
-                const totalScheduled = newSchedules.reduce((sum, s) => sum + s.amount, 0);
-                // Assume a reasonable remaining amount (e.g., 10% of total scheduled)
-                const estimatedTotal = totalScheduled / 0.9; // If 90% is scheduled, 10% remains
-                const remaining = Math.max(0, estimatedTotal - totalScheduled);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            } else {
-                // For percentage mode, calculate remaining percentage
-                const totalPercentage = newSchedules.reduce((sum, s) => sum + s.amount, 0);
-                const remaining = Math.max(0, 100 - totalPercentage);
-                
-                setIsComplete(remaining <= 0);
-                setRemainingAmount(remaining);
-            }
-        } else {
-            // Calculate remaining amount with invoice
-            const isAmountMode = newSchedules[0]?.is_amount ?? true;
-            const totalAmount = selectedInvoice.amount;
-            
-            const scheduledAmount = newSchedules.reduce((sum, s) => {
-                if (s.is_amount !== isAmountMode) {
-                    return sum + (isAmountMode 
-                        ? (s.amount * totalAmount / 100)
-                        : (s.amount / totalAmount * 100)
-                    );
-                }
-                return sum + s.amount;
-            }, 0);
-            
-            const remaining = isAmountMode 
-                ? Number((totalAmount - scheduledAmount).toFixed(2))
-                : Number((100 - scheduledAmount).toFixed(0));
-            
-            setIsComplete(remaining <= 0);
-            setRemainingAmount(remaining);
-        }
+        updateScheduleCompletion(newSchedules);
         
         // Update parent
         const currentParameters: PaymentScheduleParameters = {

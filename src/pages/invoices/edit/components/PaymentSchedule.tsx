@@ -33,6 +33,7 @@ import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { AxiosError } from 'axios';
 import { History as HistoryIcon } from '$app/components/icons/History';
 import { $refetch } from '$app/common/hooks/useRefetch';
+import { calculateScheduleRemaining } from '$app/pages/settings/schedules/common/helpers/payment-schedule';
 
 const ScheduleBox = styled.div`
   background-color: ${(props) => props.theme.backgroundColor};
@@ -171,23 +172,10 @@ function PaymentSchedule() {
       return;
     }
 
-    // Calculate remaining amount with invoice
-    const isAmountMode = schedule.parameters.schedule[0]?.is_amount ?? true;
-    const totalAmount = localInvoice.amount;
-    
-    const scheduledAmount = schedule.parameters.schedule.reduce((sum, s) => {
-      if (s.is_amount !== isAmountMode) {
-        return sum + (isAmountMode 
-          ? (s.amount * totalAmount / 100)
-          : (s.amount / totalAmount * 100)
-        );
-      }
-      return sum + s.amount;
-    }, 0);
-    
-    const remaining = isAmountMode 
-      ? Number((totalAmount - scheduledAmount).toFixed(2))
-      : Number((100 - scheduledAmount).toFixed(0));
+    const remaining = calculateScheduleRemaining({
+      schedules: schedule.parameters.schedule,
+      invoice: localInvoice,
+    });
     
     setIsComplete(remaining <= 0);
     setRemainingAmount(remaining);

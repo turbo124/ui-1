@@ -17,6 +17,10 @@ import { useTranslation } from 'react-i18next';
 import { Schedule, ScheduleParams } from '$app/common/interfaces/schedule';
 import { Invoice } from '$app/common/interfaces/invoice';
 import Toggle from '$app/components/forms/Toggle';
+import {
+    calculateScheduleRemaining,
+    getInvoicePaymentScheduleAmount,
+} from '../helpers/payment-schedule';
 
 interface Props {
     visible: boolean;
@@ -69,29 +73,13 @@ export function AddScheduleModal(props: Props) {
         if (!selectedInvoice) {
             return remainingAmount;
         }
-        
-        console.log('isAmountMode', isAmountMode);
-        const totalAmount = selectedInvoice.amount;
-        
-        const scheduledAmount = schedule.parameters.schedule?.reduce((sum, s, index) => {
-            // Exclude the current schedule being edited
-            if (index === scheduleIndex) {
-                return sum;
-            }
-            if (s.is_amount !== isAmountMode) {
-                return sum + (isAmountMode 
-                    ? (s.amount * totalAmount / 100)
-                    : (s.amount / totalAmount * 100)
-                );
-            }
-            return sum + s.amount;
-        }, 0) || 0;
-        
-        const remaining = isAmountMode 
-            ? Number((totalAmount - scheduledAmount).toFixed(2))
-            : Number((100 - scheduledAmount).toFixed(0));
 
-        return remaining;
+        return calculateScheduleRemaining({
+            schedules: schedule.parameters.schedule || [],
+            invoice: selectedInvoice,
+            isAmountMode,
+            excludeIndex: scheduleIndex,
+        });
     };
 
     // Calculate initial amount based on mode and remaining amount
@@ -137,11 +125,10 @@ export function AddScheduleModal(props: Props) {
                 });
             }
         }
-    }, [visible, scheduleIndex, minDate, isAmountMode, selectedInvoice?.amount, schedule]);
+    }, [visible, scheduleIndex, minDate, isAmountMode, selectedInvoice?.amount, selectedInvoice?.balance, selectedInvoice?.status_id, schedule]);
 
     // Reset amount when toggling between % and $ modes
     const handleModeChange = (isAmount: boolean) => {
-        const totalAmount = selectedInvoice?.amount || 0;
         const modalRemaining = calculateModalRemaining(isAmount);
         let newAmount: number;
 
@@ -253,7 +240,7 @@ export function AddScheduleModal(props: Props) {
                     />
 
                     <div className="text-sm text-gray-600 mt-1">
-                        {currentSchedule.is_amount ? `Remaining: $${calculateModalRemaining(currentSchedule.is_amount)} of ${selectedInvoice?.amount || 0}` : `Remaining: ${calculateModalRemaining(currentSchedule.is_amount)}% of invoice`}
+                        {currentSchedule.is_amount ? `Remaining: $${calculateModalRemaining(currentSchedule.is_amount)} of ${getInvoicePaymentScheduleAmount(selectedInvoice)}` : `Remaining: ${calculateModalRemaining(currentSchedule.is_amount)}% of invoice`}
                     </div>
                 </div>
 
