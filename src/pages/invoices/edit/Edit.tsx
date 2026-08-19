@@ -8,8 +8,8 @@
  * @license https://www.elastic.co/licensing/elastic-license
  */
 
-import { useAtom } from 'jotai';
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import { useAtom, useAtomValue } from 'jotai';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { ExternalLink } from 'react-feather';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,7 +20,13 @@ import {
 } from 'react-router-dom';
 import { useColorScheme } from '$app/common/colors';
 import { route } from '$app/common/helpers/route';
-import { useReactSettings } from '$app/common/hooks/useReactSettings';
+import { toast } from '$app/common/helpers/toast/toast';
+import {
+  ProductTaskTab,
+  reactSettingsAtom,
+  useReactSettings,
+  useSaveReactSettingWithRollback,
+} from '$app/common/hooks/useReactSettings';
 import { useScrollToLineItem } from '$app/common/hooks/useScrollToLineItem';
 import { Client } from '$app/common/interfaces/client';
 import { Invoice as IInvoice, Invoice } from '$app/common/interfaces/invoice';
@@ -30,9 +36,11 @@ import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import { Assigned } from '$app/components/Assigned';
 import { Badge } from '$app/components/Badge';
 import { Card } from '$app/components/cards';
-import { InputLabel, Link } from '$app/components/forms';
+import { Button, InputLabel, Link } from '$app/components/forms';
 import { HiddenResourceTaxesAlert } from '$app/components/HiddenResourceTaxesAlert';
 import { Icon } from '$app/components/icons/Icon';
+import { Modal } from '$app/components/Modal';
+import { PreferenceHint } from '$app/components/PreferenceHint';
 import { Spinner } from '$app/components/Spinner';
 import { TabGroup } from '$app/components/TabGroup';
 import { TaxExemptBadge } from '$app/pages/clients/show/components/TaxExemptBadge';
@@ -54,6 +62,9 @@ import { useProductColumns } from '../common/hooks/useProductColumns';
 import { useTaskColumns } from '../common/hooks/useTaskColumns';
 import { useInvoiceUtilities } from '../create/hooks/useInvoiceUtilities';
 import { TaxDataBadge } from './components/TaxDataBadge';
+import { resolveInvoiceEditTab } from './resolveInvoiceEditTab';
+
+const INVOICE_EDIT_DEFAULT_TAB_HINT_VERSION = 1;
 
 export interface Context {
   invoice: Invoice | undefined;
@@ -87,7 +98,26 @@ export default function Edit() {
 
   const taskColumns = useTaskColumns();
   const reactSettings = useReactSettings();
+  const reactSettingsHydrated = useAtomValue(reactSettingsAtom) !== null;
+  const saveReactSetting = useSaveReactSettingWithRollback();
   const productColumns = useProductColumns();
+
+  const [preferenceModalTab, setPreferenceModalTab] =
+    useState<ProductTaskTab | null>(null);
+  const [isPreferenceSaving, setIsPreferenceSaving] = useState(false);
+
+  const preferredInvoiceEditTab =
+    reactSettings.preferences.preferred_tabs?.invoice_edit;
+  const invoiceEditTab = resolveInvoiceEditTab(
+    searchParams.get('table'),
+    preferredInvoiceEditTab
+  );
+  const effectivePreferredInvoiceEditTab =
+    preferredInvoiceEditTab ?? 'products';
+  const preferenceHintState =
+    reactSettings.preferences.preference_hints?.invoice_edit_default_tab;
+  const shouldPulsePreferenceHint =
+    (preferenceHintState?.version ?? 0) < INVOICE_EDIT_DEFAULT_TAB_HINT_VERSION;
 
   useScrollToLineItem(Boolean(invoice && client));
 
@@ -113,6 +143,47 @@ export default function Edit() {
     useChangeTemplate();
 
   const statusThemeColors = useStatusThemeColorScheme();
+
+  const openPreferenceModal = (tab: ProductTaskTab) => {
+    setPreferenceModalTab(tab);
+
+    if (shouldPulsePreferenceHint) {
+      saveReactSetting(
+        'preferences.preference_hints.invoice_edit_default_tab',
+        {
+          version: INVOICE_EDIT_DEFAULT_TAB_HINT_VERSION,
+          seen_at: Math.floor(Date.now() / 1000),
+        }
+      ).catch(() => undefined);
+    }
+  };
+
+  const savePreferredInvoiceEditTab = async () => {
+    if (!preferenceModalTab || isPreferenceSaving) {
+      return;
+    }
+
+    setIsPreferenceSaving(true);
+    toast.processing();
+
+    try {
+      await saveReactSetting(
+        'preferences.preferred_tabs.invoice_edit',
+        preferenceModalTab
+      );
+
+      toast.success('updated_settings');
+      setPreferenceModalTab(null);
+    } catch {
+      toast.error('an_error_occurred');
+    } finally {
+      setIsPreferenceSaving(false);
+    }
+  };
+
+  const preferenceModalTabLabel = preferenceModalTab
+    ? t(preferenceModalTab)
+    : '';
 
   return (
     <>
@@ -261,11 +332,36 @@ export default function Edit() {
 
           <TabGroup
             tabs={[t('products'), t('tasks')]}
-            defaultTabIndex={searchParams.get('table') === 'tasks' ? 1 : 0}
+            defaultTabIndex={invoiceEditTab === 'tasks' ? 1 : 0}
             formatTabLabel={(index) => {
               if (index === 1) {
                 return <TasksTabLabel lineItems={invoice?.line_items || []} />;
               }
+            }}
+            renderTabAccessory={(index) => {
+              const tab: ProductTaskTab = index === 1 ? 'tasks' : 'products';
+
+              if (
+                !reactSettingsHydrated ||
+                tab === effectivePreferredInvoiceEditTab
+              ) {
+                return;
+              }
+
+              const tabLabel = t(tab);
+
+              return (
+                <PreferenceHint
+                  label={t('make_tab_default_for_invoice_editing', {
+                    tab: tabLabel,
+                    defaultValue:
+                      'Make {{tab}} the default tab for invoice editing',
+                  })}
+                  pulsing={shouldPulsePreferenceHint}
+                  onClick={() => openPreferenceModal(tab)}
+                  cypressRef={`invoiceEdit${tab}PreferenceHint`}
+                />
+              );
             }}
           >
             <div className="w-full">
@@ -273,9 +369,7 @@ export default function Edit() {
                 <ProductsTable
                   type="product"
                   resource={invoice}
-                  shouldCreateInitialLineItem={
-                    searchParams.get('table') !== 'tasks'
-                  }
+                  shouldCreateInitialLineItem={invoiceEditTab === 'products'}
                   items={invoice.line_items.filter((item) =>
                     [
                       InvoiceItemType.Product,
@@ -304,9 +398,7 @@ export default function Edit() {
                 <ProductsTable
                   type="task"
                   resource={invoice}
-                  shouldCreateInitialLineItem={
-                    searchParams.get('table') === 'tasks'
-                  }
+                  shouldCreateInitialLineItem={invoiceEditTab === 'tasks'}
                   items={invoice.line_items.filter(
                     (item) => item.type_id === InvoiceItemType.Task
                   )}
@@ -365,6 +457,47 @@ export default function Edit() {
           )}
         </div>
       )}
+
+      <Modal
+        visible={preferenceModalTab !== null}
+        onClose={() => setPreferenceModalTab(null)}
+        title={t('open_invoices_on_tab', {
+          tab: preferenceModalTabLabel,
+          defaultValue: 'Open invoices on {{tab}}?',
+        })}
+        size="extraSmall"
+        disableClosing={isPreferenceSaving}
+      >
+        <p>
+          {t('default_invoice_edit_tab_help', {
+            tab: preferenceModalTabLabel,
+            defaultValue:
+              'Make {{tab}} the default tab when editing an invoice. Links that select a tab will still take priority.',
+          })}
+        </p>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            type="secondary"
+            behavior="button"
+            onClick={() => setPreferenceModalTab(null)}
+            disabled={isPreferenceSaving}
+            disableWithoutIcon
+          >
+            {t('cancel')}
+          </Button>
+
+          <Button
+            behavior="button"
+            onClick={savePreferredInvoiceEditTab}
+            disabled={isPreferenceSaving}
+          >
+            {t('make_this_the_default', {
+              defaultValue: 'Make this the default',
+            })}
+          </Button>
+        </div>
+      </Modal>
 
       {invoice ? (
         <ChangeTemplateModal<IInvoice>

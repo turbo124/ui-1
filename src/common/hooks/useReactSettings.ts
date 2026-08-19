@@ -41,6 +41,13 @@ export { resolveShortcutBindings };
 
 export type ChartsDefaultView = 'day' | 'week' | 'month';
 
+export type ProductTaskTab = 'products' | 'tasks';
+
+export interface PreferenceHintState {
+  version: number;
+  seen_at: number;
+}
+
 export interface TableFiltersPreference {
   filter?: string;
   customFilter?: string[];
@@ -81,6 +88,12 @@ export interface Preferences {
   document_upload_tour_shown?: boolean;
   blueprint_builder_tour_shown?: boolean;
   blueprint_use_template_tour_shown?: boolean;
+  preferred_tabs?: {
+    invoice_edit?: ProductTaskTab;
+  };
+  preference_hints?: {
+    invoice_edit_default_tab?: PreferenceHintState;
+  };
 }
 
 export type ImportTemplates = Record<string, Record<string, (string | null)[]>>;
@@ -500,6 +513,38 @@ export function useSaveReactSettings() {
       });
     },
     [updateSettings, userId]
+  );
+}
+
+// Optimistically update and persist one settings path, rolling back only that
+// path if the request fails. This is useful for small, immediate preferences
+// that do not have their own draft form.
+export function useSaveReactSettingWithRollback() {
+  const updateSettings = useUpdateReactSettings();
+  const flushSettings = useFlushReactSettings();
+  const setSettings = useSetAtom(reactSettingsAtom);
+
+  return useCallback(
+    async (property: string, value: unknown) => {
+      const previous = getDefaultStore().get(reactSettingsAtom);
+
+      updateSettings(property, value);
+
+      const failed = getDefaultStore().get(reactSettingsAtom);
+
+      try {
+        return await flushSettings();
+      } catch (error) {
+        if (failed !== null) {
+          setSettings((current) =>
+            rollbackReactSettingsPaths(current, failed, previous, [property])
+          );
+        }
+
+        throw error;
+      }
+    },
+    [flushSettings, setSettings, updateSettings]
   );
 }
 

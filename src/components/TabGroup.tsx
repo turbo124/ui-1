@@ -30,6 +30,7 @@ interface Props {
   withScrollableContent?: boolean;
   onTabChange?: (index: number) => void;
   formatTabLabel?: (index: number) => ReactNode | undefined;
+  renderTabAccessory?: (index: number) => ReactNode | undefined;
   withoutVerticalMargin?: boolean;
   withHorizontalPadding?: boolean;
   horizontalPaddingWidth?: string;
@@ -89,39 +90,50 @@ export function TabGroup(props: Props) {
             />
           )}
 
-          {props.tabs.map((tab, index) => (
-            <div
-              key={index}
-              className={classNames({
-                'flex-1': props.width === 'full',
-              })}
-            >
-              <StyledButton
-                className={classNames(
-                  'whitespace-nowrap font-medium text-sm py-3 px-4 focus:outline-none',
-                  {
-                    'w-full': props.width === 'full',
-                  }
-                )}
-                type="button"
-                tabIndex={-1}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => handleTabChange(index)}
-                theme={{
-                  textColor: currentIndex === index ? colors.$3 : colors.$17,
-                  hoverTextColor: colors.$3,
-                }}
-                style={{
-                  borderBottom:
-                    currentIndex === index
-                      ? `1px solid ${colors.$3}`
-                      : `1px solid ${colors.$20}`,
-                }}
+          {props.tabs.map((tab, index) => {
+            const accessory = props.renderTabAccessory?.(index);
+
+            return (
+              <div
+                key={index}
+                className={classNames('relative', {
+                  'flex-1': props.width === 'full',
+                })}
               >
-                {props.formatTabLabel?.(index) || tab}
-              </StyledButton>
-            </div>
-          ))}
+                <StyledButton
+                  className={classNames(
+                    'whitespace-nowrap font-medium text-sm py-3 px-4 focus:outline-none',
+                    {
+                      'w-full': props.width === 'full',
+                    }
+                  )}
+                  type="button"
+                  tabIndex={-1}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleTabChange(index)}
+                  theme={{
+                    textColor: currentIndex === index ? colors.$3 : colors.$17,
+                    hoverTextColor: colors.$3,
+                  }}
+                  style={{
+                    paddingRight: accessory ? '2.75rem' : undefined,
+                    borderBottom:
+                      currentIndex === index
+                        ? `1px solid ${colors.$3}`
+                        : `1px solid ${colors.$20}`,
+                  }}
+                >
+                  {props.formatTabLabel?.(index) || tab}
+                </StyledButton>
+
+                {accessory && (
+                  <div className="absolute right-1 top-1/2 z-[1] -translate-y-1/2">
+                    {accessory}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           <div
             className={classNames({
