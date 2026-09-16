@@ -1,13 +1,13 @@
-import { login } from '$tests/e2e/helpers';
+import { Locator, Page } from '@playwright/test';
 import {
+  type ApiFixture,
+  expect,
   extractIdFromUrl,
   resetAccountBeforeAll,
   test,
-  expect,
   uniqueName,
-  type ApiFixture,
 } from '$tests/e2e/fixtures';
-import { Locator, Page } from '@playwright/test';
+import { login } from '$tests/e2e/helpers';
 
 resetAccountBeforeAll();
 
@@ -54,6 +54,48 @@ function trackClientFromUrl(api: ApiFixture, url: string) {
   return id;
 }
 
+test('generated number variables are scoped to each entity', async ({
+  page,
+}) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await login(page);
+
+  await page.goto('/settings/generated_numbers/invoices');
+  await page.waitForLoadState('networkidle');
+
+  const clientCustomVariable = page.getByRole('button', {
+    name: /\{\$client_custom1\}/,
+  });
+
+  await expect(clientCustomVariable).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /\{\$vendor_custom1\}/ })
+  ).toHaveCount(0);
+
+  await clientCustomVariable.click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('{$client_custom1}');
+
+  await page.goto('/settings/generated_numbers/expenses');
+  await page.waitForLoadState('networkidle');
+  await expect(
+    page.getByRole('button', { name: /\{\$vendor_custom1\}/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /\{\$expense_id_number\}/ })
+  ).toBeVisible();
+
+  await page.goto('/settings/generated_numbers/purchase_orders');
+  await page.waitForLoadState('networkidle');
+  await expect(
+    page.getByRole('button', { name: /\{\$client_custom1\}/ })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: /\{\$vendor_custom1\}/ })
+  ).toHaveCount(0);
+});
+
 test('client generated number pattern is applied to new clients', async ({
   page,
   api,
@@ -67,7 +109,8 @@ test('client generated number pattern is applied to new clients', async ({
   const suffix = Date.now().toString(36).slice(-6);
   const pattern = 'GN-' + suffix + '-{$counter}';
   const counter = 731;
-  const expectedNumber = 'GN-' + suffix + '-' + String(counter).padStart(4, '0');
+  const expectedNumber =
+    'GN-' + suffix + '-' + String(counter).padStart(4, '0');
   const clientName = uniqueName('generated-number-client');
 
   await page.goto('/settings/generated_numbers/clients');

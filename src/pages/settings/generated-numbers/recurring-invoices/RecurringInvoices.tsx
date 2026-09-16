@@ -9,28 +9,21 @@
  */
 
 import { useAtomValue } from 'jotai';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useColorScheme } from '$app/common/colors';
 import { useCompanyChanges } from '$app/common/hooks/useCompanyChanges';
 import { useDisableSettingsField } from '$app/common/hooks/useDisableSettingsField';
-import { CopyToClipboard } from '$app/components/CopyToClipboard';
-import { Divider } from '$app/components/cards/Divider';
 import { NumberInputField } from '$app/components/forms/NumberInputField';
 import { PropertyCheckbox } from '$app/components/PropertyCheckbox';
 import { SettingsLabel } from '$app/components/SettingsLabel';
-import { ClickableElement, Element } from '../../../../components/cards';
+import { Element } from '../../../../components/cards';
 import { InputField } from '../../../../components/forms';
 import { companySettingsErrorsAtom } from '../../common/atoms';
 import { useHandleCurrentCompanyChangeProperty } from '../../common/hooks/useHandleCurrentCompanyChange';
-import { LinkToVariables } from '../common/components/LinkToVariables';
+import { GeneratedNumberVariables } from '../common/components/GeneratedNumberVariables';
 
 export function RecurringInvoices() {
   const [t] = useTranslation();
 
-  const [pattern, setPattern] = useState<string>('');
-
-  const colors = useColorScheme();
   const companyChanges = useCompanyChanges();
 
   const disableSettingsField = useDisableSettingsField();
@@ -38,17 +31,6 @@ export function RecurringInvoices() {
   const errors = useAtomValue(companySettingsErrorsAtom);
 
   const handleChange = useHandleCurrentCompanyChangeProperty();
-
-  const variables = [
-    '{$counter}',
-    '{$year}',
-    '{$date:Y-m-d}',
-    '{$user_id}',
-    '{$user_custom1}',
-    '{$user_custom2}',
-    '{$user_custom3}',
-    '{$user_custom4}',
-  ];
 
   return (
     <>
@@ -99,32 +81,7 @@ export function RecurringInvoices() {
         />
       </Element>
 
-      <div className="px-4 sm:px-6 py-4">
-        <Divider
-          className="border-dashed"
-          borderColor={colors.$20}
-          withoutPadding
-        />
-      </div>
-
-      {variables.map((item, index) => (
-        <ClickableElement
-          onClick={() => setPattern(pattern + item)}
-          key={index}
-        >
-          <CopyToClipboard text={item} />
-        </ClickableElement>
-      ))}
-
-      <div className="px-4 sm:px-6 pt-4 pb-6">
-        <Divider
-          className="border-dashed"
-          borderColor={colors.$20}
-          withoutPadding
-        />
-      </div>
-
-      <LinkToVariables />
+      <GeneratedNumberVariables entity="recurring_invoice" />
     </>
   );
 }
