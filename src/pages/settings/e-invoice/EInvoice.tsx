@@ -15,13 +15,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
+import { activeSettingsAtom } from '$app/common/atoms/settings';
+import { useColorScheme } from '$app/common/colors';
 import { enterprisePlan } from '$app/common/guards/guards/enterprise-plan';
 import { whiteLabelPlan } from '$app/common/guards/guards/white-label';
 import { endpoint, isHosted, isSelfHosted } from '$app/common/helpers';
+import { isPeppolCountryAllowed } from '$app/common/helpers/peppol-countries';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
+import { useCountries } from '$app/common/hooks/useCountries';
+import { useCurrentCompany } from '$app/common/hooks/useCurrentCompany';
 import { useCurrentSettingsLevel } from '$app/common/hooks/useCurrentSettingsLevel';
 import { useDisableSettingsField } from '$app/common/hooks/useDisableSettingsField';
+import { useGetSetting } from '$app/common/hooks/useGetSetting';
 import { useInjectCompanyChanges } from '$app/common/hooks/useInjectCompanyChanges';
 import { ValidationBag } from '$app/common/interfaces/validation-bag';
 import {
@@ -29,9 +35,14 @@ import {
   updateRecord,
 } from '$app/common/stores/slices/company-users';
 import { Card, Element } from '$app/components/cards';
-import { PaymentMeans } from '$app/components/e-invoice/PaymentMeans';
-import { InputField, Link, SelectField } from '$app/components/forms';
+import {
+  PaymentMeans,
+  type PaymentMeansFormComponent,
+} from '$app/components/e-invoice/PaymentMeans';
+import { Button, InputField, Link, SelectField } from '$app/components/forms';
 import Toggle from '$app/components/forms/Toggle';
+import { CloudUpload } from '$app/components/icons/CloudUpload';
+import { Trash } from '$app/components/icons/Trash';
 import { Settings } from '$app/components/layouts/Settings';
 import { PropertyCheckbox } from '$app/components/PropertyCheckbox';
 import { SettingsLabel } from '$app/components/SettingsLabel';
@@ -46,11 +57,6 @@ import { FranceReporting } from './common/components/FranceReporting';
 import { PEPPOLPlanBanner } from './common/components/PEPPOLPlanBanner';
 import { Onboarding } from './peppol/Onboarding';
 import { Preferences } from './peppol/Preferences';
-import { isPeppolCountryAllowed } from '$app/common/helpers/peppol-countries';
-import { CloudUpload } from '$app/components/icons/CloudUpload';
-import { useColorScheme } from '$app/common/colors';
-import { Trash } from '$app/components/icons/Trash';
-import { Button } from '$app/components/forms';
 
 export type EInvoiceType = {
   [key: string]: string | number | EInvoiceType;
@@ -82,6 +88,9 @@ const INVOICE_TYPES = {
 
 export function EInvoice() {
   const company = useInjectCompanyChanges();
+  const currentCompany = useCurrentCompany();
+  const countries = useCountries();
+  const getSetting = useGetSetting();
   const [t] = useTranslation();
 
   const shouldShowPEPPOLOption = (skipPlanCheck: boolean = false) => {
@@ -112,7 +121,7 @@ export function EInvoice() {
     return isPlanActive && company?.settings.country_id === '724';
   };
 
-  const eInvoiceRef = useRef<EInvoiceComponent>(null);
+  const eInvoiceRef = useRef<PaymentMeansFormComponent>(null);
 
   const pages = [
     { name: t('settings'), href: '/settings' },
@@ -127,7 +136,40 @@ export function EInvoice() {
   const disableSettingsField = useDisableSettingsField();
   const handleChange = useHandleCurrentCompanyChangeProperty();
 
-  const { isCompanySettingsActive } = useCurrentSettingsLevel();
+  const { isCompanySettingsActive, isClientSettingsActive } =
+    useCurrentSettingsLevel();
+  const activeSettings = useAtomValue(activeSettingsAtom);
+  const activeClient =
+    isClientSettingsActive && activeSettings && 'country_id' in activeSettings
+      ? activeSettings
+      : undefined;
+  const clientInvoiceType = activeClient
+    ? getSetting(
+        {
+          ...activeClient,
+          settings: company?.settings || activeClient.settings,
+        },
+        'e_invoice_type'
+      )
+    : undefined;
+  const validationContext = {
+    eInvoiceType:
+      (typeof clientInvoiceType === 'string'
+        ? clientInvoiceType
+        : company?.settings.e_invoice_type) ||
+      currentCompany.settings.e_invoice_type ||
+      'EN16931',
+    supplierCountry: countries.find(
+      ({ id }) =>
+        id ===
+        (isClientSettingsActive
+          ? currentCompany.settings.country_id
+          : company?.settings.country_id || currentCompany.settings.country_id)
+    )?.iso_3166_2,
+    customerCountry: activeClient
+      ? countries.find(({ id }) => id === activeClient.country_id)?.iso_3166_2
+      : undefined,
+  };
 
   const [errors, setErrors] = useAtom(companySettingsErrorsAtom);
 
@@ -217,24 +259,33 @@ export function EInvoice() {
     }
   }, [saveChanges]);
 
+  if (isClientSettingsActive) {
+    return (
+      <Settings
+        title={t('e_invoicing')}
+        docsLink="en/advanced-settings/#e_invoice"
+        breadcrumbs={pages}
+        onSaveClick={() => eInvoiceRef.current?.saveEInvoice()}
+        disableSaveButton={!activeSettings?.id}
+      >
+        <PaymentMeans
+          key={activeSettings?.id}
+          ref={eInvoiceRef}
+          entity="client"
+          entityId={activeSettings?.id}
+          currentEInvoice={company?.e_invoice || {}}
+          validationContext={validationContext}
+        />
+      </Settings>
+    );
+  }
+
   return (
     <Settings
       title={t('e_invoicing')}
       docsLink="en/advanced-settings/#e_invoice"
       breadcrumbs={pages}
-      // onSaveClick={() => {
-      //   if (eInvoiceRef?.current?.saveEInvoice()) {
-      //     handleChange('e_invoice', eInvoiceRef?.current?.saveEInvoice());
-      //   } else {
-      //     handleChange('e_invoice', {});
-      //   }
-
-      //   setSaveChanges(true);
-      // }}
-      onSaveClick={() => {
-        eInvoiceRef?.current?.saveEInvoice();
-        onSave();
-      }}
+      onSaveClick={() => eInvoiceRef.current?.saveEInvoice()}
       disableSaveButton={isFormBusy}
     >
       <PEPPOLPlanBanner />
@@ -588,7 +639,9 @@ export function EInvoice() {
       <PaymentMeans
         ref={eInvoiceRef}
         currentEInvoice={company?.e_invoice || {}}
+        validationContext={validationContext}
         entity="company"
+        onBeforeSave={onSave}
       />
 
       <EUTaxDetails />

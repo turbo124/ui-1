@@ -10,446 +10,230 @@
 
 import { AxiosError } from 'axios';
 import { useFormik } from 'formik';
-import { get } from 'lodash';
+import { useSetAtom } from 'jotai';
 import {
-  Dispatch,
   forwardRef,
-  SetStateAction,
   useEffect,
   useImperativeHandle,
-  useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { activeSettingsAtom } from '$app/common/atoms/settings';
 import { useColorScheme } from '$app/common/colors';
+import {
+  getPaymentMeansFields,
+  PAYMENT_MEANS,
+  type PaymentMeansField,
+  type PaymentMeansValidationContext,
+} from '$app/common/constants/payment-means';
 import { endpoint } from '$app/common/helpers';
+import {
+  changePaymentMeansCode,
+  paymentMeansPayload,
+  readPaymentMeans,
+} from '$app/common/helpers/payment-means';
+import {
+  type PaymentMeansValidationError,
+  paymentMeansFieldLimit,
+  requiredPaymentMeansFields,
+  validatePaymentMeans,
+} from '$app/common/helpers/payment-means-validation';
 import { request } from '$app/common/helpers/request';
 import { toast } from '$app/common/helpers/toast/toast';
-import { useCurrentCompany } from '$app/common/hooks/useCurrentCompany';
+import { $refetch } from '$app/common/hooks/useRefetch';
 import { useRefreshCompanyUsers } from '$app/common/hooks/useRefreshCompanyUsers';
-import { Invoice } from '$app/common/interfaces/invoice';
-import { ValidationBag } from '$app/common/interfaces/validation-bag';
-import { EInvoiceType } from '$app/pages/settings';
+import type { Client } from '$app/common/interfaces/client';
+import type { GenericSingleResourceResponse } from '$app/common/interfaces/generic-api-response';
+import type { ValidationBag } from '$app/common/interfaces/validation-bag';
+import { updateChanges } from '$app/common/stores/slices/company-users';
+import type { EInvoiceType } from '$app/pages/settings';
 import { Card, Element } from '../cards';
+import { ErrorMessage } from '../ErrorMessage';
 import { InputField, SelectField } from '../forms';
 
-type Entity = 'company' | 'invoice' | 'client';
-
 interface Props {
-  entity: Entity;
+  entity: 'company' | 'invoice' | 'client';
+  entityId?: string;
   currentEInvoice: EInvoiceType;
-  isInvoiceLevel?: boolean;
-  invoice?: Invoice | undefined;
-  setInvoice?: Dispatch<SetStateAction<Invoice | undefined>>;
+  onBeforeSave?: () => Promise<unknown>;
+  validationContext?: PaymentMeansValidationContext;
 }
 
-interface PaymentMeansFormComponent {
-  saveEInvoice: () => void;
+export interface PaymentMeansFormComponent {
+  saveEInvoice: () => Promise<void>;
 }
 
-interface PaymentMeans {
-  code: string;
-  iban: string;
-  bic_swift: string;
-  account_holder: string;
-  information: string;
-  card_holder: string;
-  card_type: string;
-}
-
-const PAYMENT_MEANS_CODE_LIST = {
-  1: 'Instrument not defined',
-  2: 'Automated clearing house credit',
-  3: 'Automated clearing house debit',
-  4: 'ACH demand debit reversal',
-  5: 'ACH demand credit reversal',
-  6: 'ACH demand credit',
-  7: 'ACH demand debit',
-  8: 'Hold',
-  9: 'National or regional clearing',
-  10: 'In cash',
-  11: 'ACH savings credit reversal',
-  12: 'ACH savings debit reversal',
-  13: 'ACH savings credit',
-  14: 'ACH savings debit',
-  15: 'Bookentry credit',
-  16: 'Bookentry debit',
-  17: 'ACH demand cash concentration/disbursement (CCD) credit',
-  18: 'ACH demand cash concentration/disbursement (CCD) debit',
-  19: 'ACH demand corporate trade payment (CTP) credit',
-  20: 'Cheque',
-  21: "Banker's draft",
-  22: "Certified banker's draft",
-  23: 'Bank cheque (issued by a banking or similar establishment)',
-  24: 'Bill of exchange awaiting acceptance',
-  25: 'Certified cheque',
-  26: 'Local cheque',
-  27: 'ACH demand corporate trade payment (CTP) debit',
-  28: 'ACH demand corporate trade exchange (CTX) credit',
-  29: 'ACH demand corporate trade exchange (CTX) debit',
-  30: 'Credit transfer',
-  31: 'Debit transfer',
-  32: 'ACH demand cash concentration/disbursement plus (CCD+)',
-  33: 'ACH demand cash concentration/disbursement plus (CCD+)',
-  34: 'ACH prearranged payment and deposit (PPD)',
-  35: 'ACH savings cash concentration/disbursement (CCD) credit',
-  36: 'ACH savings cash concentration/disbursement (CCD) debit',
-  37: 'ACH savings corporate trade payment (CTP) credit',
-  38: 'ACH savings corporate trade payment (CTP) debit',
-  39: 'ACH savings corporate trade exchange (CTX) credit',
-  40: 'ACH savings corporate trade exchange (CTX) debit',
-  41: 'ACH savings cash concentration/disbursement plus (CCD+)',
-  42: 'Payment to bank account',
-  43: 'ACH savings cash concentration/disbursement plus (CCD+)',
-  44: 'Accepted bill of exchange',
-  45: 'Referenced home-banking credit transfer',
-  46: 'Interbank debit transfer',
-  47: 'Home-banking debit transfer',
-  48: 'Bank card',
-  49: 'Direct debit',
-  50: 'Payment by postgiro',
-  51: 'FR, norme 6 97-Telereglement CFONB (French Organisation for',
-  52: 'Urgent commercial payment',
-  53: 'Urgent Treasury Payment',
-  54: 'Credit card',
-  55: 'Debit card',
-  56: 'Bankgiro',
-  57: 'Standing agreement',
-  58: 'SEPA credit transfer',
-  59: 'SEPA direct debit',
-  60: 'Promissory note',
-  61: 'Promissory note signed by the debtor',
-  62: 'Promissory note signed by the debtor and endorsed by a bank',
-  63: 'Promissory note signed by the debtor and endorsed by a',
-  64: 'Promissory note signed by a bank',
-  65: 'Promissory note signed by a bank and endorsed by another',
-  66: 'Promissory note signed by a third party',
-  67: 'Promissory note signed by a third party and endorsed by a',
-  68: 'Online payment service',
-  69: 'Transfer Advice',
-  70: 'Bill drawn by the creditor on the debtor',
-  74: 'Bill drawn by the creditor on a bank',
-  75: 'Bill drawn by the creditor, endorsed by another bank',
-  76: 'Bill drawn by the creditor on a bank and endorsed by a',
-  77: 'Bill drawn by the creditor on a third party',
-  78: 'Bill drawn by creditor on third party, accepted and',
-  91: "Not transferable banker's draft",
-  92: 'Not transferable local cheque',
-  93: 'Reference giro',
-  94: 'Urgent giro',
-  95: 'Free format giro',
-  96: 'Requested method for payment was not used',
-  97: 'Clearing between partners',
-  ZZZ: 'Mutually defined',
+const FIELD_LABELS: Record<PaymentMeansField, [string, string]> = {
+  information: ['payment_means_description', 'Payment instructions'],
+  payment_reference: ['payment_reference', 'Payment Reference'],
+  iban: ['payment_account_identifier', 'Account Number / IBAN'],
+  account_holder: ['account_holder', 'Account Name'],
+  bic_swift: ['payment_bank_identifier', 'BIC / Bank Code'],
+  payer_bank_account: ['payer_bank_account', 'Payer Bank Account Number'],
+  mandate_reference: ['payment_mandate_reference', 'Mandate Reference'],
+  creditor_identifier: ['payment_creditor_identifier', 'Creditor Identifier'],
+  card_type: ['card_type', 'Card Type'],
+  card_number: ['payment_card_last_four', 'Last Four Card Digits'],
+  card_holder: ['card_holder', 'Card Holder'],
 };
-
-const PAYMENT_MEANS_FORM_ELEMENTS = {
-  '1': [], // Instrument not defined
-  '2': ['iban', 'bic_swift'], // ACH credit
-  '3': ['payer_bank_account', 'iban', 'bic_swift'], // ACH debit
-  '4': ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand debit reversal
-  '5': ['iban', 'bic_swift'], // ACH demand credit reversal
-  '6': ['iban', 'bic_swift'], // ACH demand credit
-  '7': ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand debit
-  '8': [], // Hold
-  '9': ['iban', 'bic_swift'], // National or regional clearing
-  '10': [], // In cash
-  '11': ['iban', 'bic_swift'], // ACH savings credit reversal
-  '12': ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings debit reversal
-  '13': ['iban', 'bic_swift'], // ACH savings credit
-  '14': ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings debit
-  '15': ['account_holder', 'bsb_sort'], // Bookentry credit
-  '16': ['account_holder', 'bsb_sort'], // Bookentry debit
-  '17': ['iban', 'bic_swift'], // ACH demand CCD credit
-  '18': ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CCD debit
-  '19': ['iban', 'bic_swift'], // ACH demand CTP credit
-  '20': [], // Cheque
-  '21': [], // Banker's draft
-  '22': [], // Certified banker's draft
-  '23': [], // Bank cheque
-  '24': [], // Bill of exchange awaiting acceptance
-  '25': [], // Certified cheque
-  '26': [], // Local cheque
-  '27': ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CTP debit
-  '28': ['iban', 'bic_swift'], // ACH demand CTX credit
-  '29': ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CTX debit
-  '30': ['iban', 'bic_swift', 'account_holder'], // Credit transfer
-  '31': ['iban', 'bic_swift', 'account_holder'], // Debit transfer
-  '32': ['iban', 'bic_swift', 'account_holder'], // ACH demand CCD+ credit
-  '33': ['payer_bank_account', 'iban', 'bic_swift', 'account_holder'], // ACH demand CCD+ debit
-  '34': ['iban', 'bic_swift', 'account_holder'], // ACH PPD
-  '35': ['iban', 'bic_swift', 'account_holder'], // ACH savings CCD credit
-  '36': ['payer_bank_account', 'iban', 'bic_swift', 'account_holder'], // ACH savings CCD debit
-  '37': ['iban', 'bic_swift', 'account_holder'], // ACH savings CTP credit
-  '38': ['payer_bank_account', 'iban', 'bic_swift', 'account_holder'], // ACH savings CTP debit
-  '39': ['iban', 'bic_swift', 'account_holder'], // ACH savings CTX credit
-  '40': ['payer_bank_account', 'iban', 'bic_swift', 'account_holder'], // ACH savings CTX debit
-  '41': ['iban', 'bic_swift', 'account_holder'], // ACH savings CCD+ credit
-  '42': ['iban', 'bic_swift', 'account_holder'], // Payment to bank account
-  '43': ['payer_bank_account', 'iban', 'bic_swift', 'account_holder'], // ACH savings CCD+ debit
-  '44': [], // Accepted bill of exchange
-  '45': ['iban', 'bic_swift'], // Referenced home-banking credit transfer
-  '46': ['iban', 'bic_swift'], // Interbank debit transfer
-  '47': ['iban', 'bic_swift'], // Home-banking debit transfer
-  '48': ['card_type', 'card_number'], // Bank card
-  '49': ['payer_bank_account', 'iban', 'bic_swift'], // Direct debit
-  '50': ['account_holder'], // Payment by postgiro
-  '51': ['iban', 'bic_swift'], // FR, norme 6 97-Telereglement CFONB
-  '52': ['iban', 'bic_swift'], // Urgent commercial payment
-  '53': ['iban', 'bic_swift'], // Urgent Treasury Payment
-  '54': ['card_type', 'card_number', 'card_holder'], // Credit card
-  '55': ['card_type', 'card_number', 'card_holder'], // Debit card
-  '56': ['account_holder'], // Bankgiro
-  '57': ['iban', 'bic_swift'], // Standing agreement
-  '58': ['account_holder', 'iban', 'bic_swift'], // SEPA credit transfer
-  '59': ['account_holder', 'iban', 'bic_swift'], // SEPA direct debit
-  '60': [], // Promissory note
-  '61': [], // Promissory note signed by debtor
-  '62': ['bic_swift'], // Promissory note signed by debtor and endorsed by bank
-  '63': [], // Promissory note signed by debtor and endorsed
-  '64': ['bic_swift'], // Promissory note signed by bank
-  '65': ['bic_swift'], // Promissory note signed by bank and endorsed by another
-  '66': [], // Promissory note signed by third party
-  '67': ['bic_swift'], // Promissory note signed by third party and endorsed by bank
-  '68': ['iban'], // Online payment service
-  '69': ['iban', 'bic_swift'], // Transfer Advice
-  '70': [], // Bill drawn by creditor on debtor
-  '74': ['bic_swift'], // Bill drawn by creditor on bank
-  '75': ['bic_swift'], // Bill drawn by creditor, endorsed by bank
-  '76': ['bic_swift'], // Bill drawn by creditor on bank and endorsed
-  '77': [], // Bill drawn by creditor on third party
-  '78': [], // Bill drawn by creditor on third party, accepted
-  '91': [], // Not transferable banker's draft
-  '92': [], // Not transferable local cheque
-  '93': ['iban', 'bic_swift'], // Reference giro
-  '94': ['iban', 'bic_swift'], // Urgent giro
-  '95': ['iban', 'bic_swift'], // Free format giro
-  '96': [], // Requested method not used
-  '97': ['account_holder'], // Clearing between partners
-  ZZZ: [], // Mutually defined
-};
-
-// public static array $payment_means_requirements_codes = [
-//     '1' => [], // Instrument not defined
-//     '2' => ['iban', 'bic_swift'], // ACH credit
-//     '3' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH debit
-//     '4' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand debit reversal
-//     '5' => ['iban', 'bic_swift'], // ACH demand credit reversal
-//     '6' => ['iban', 'bic_swift'], // ACH demand credit
-//     '7' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand debit
-//     '8' => [], // Hold
-//     '9' => ['iban', 'bic_swift'], // National or regional clearing
-//     '10' => [], // In cash
-//     '11' => ['iban', 'bic_swift'], // ACH savings credit reversal
-//     '12' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings debit reversal
-//     '13' => ['iban', 'bic_swift'], // ACH savings credit
-//     '14' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings debit
-//     '15' => ['account_holder', 'bsb_sort'], // Bookentry credit
-//     '16' => ['account_holder', 'bsb_sort'], // Bookentry debit
-//     '17' => ['iban', 'bic_swift'], // ACH demand CCD credit
-//     '18' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CCD debit
-//     '19' => ['iban', 'bic_swift'], // ACH demand CTP credit
-//     '20' => [], // Cheque
-//     '21' => [], // Banker's draft
-//     '22' => [], // Certified banker's draft
-//     '23' => [], // Bank cheque
-//     '24' => [], // Bill of exchange awaiting acceptance
-//     '25' => [], // Certified cheque
-//     '26' => [], // Local cheque
-//     '27' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CTP debit
-//     '28' => ['iban', 'bic_swift'], // ACH demand CTX credit
-//     '29' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CTX debit
-//     '30' => ['iban', 'bic_swift'], // Credit transfer
-//     '31' => ['iban', 'bic_swift'], // Debit transfer
-//     '32' => ['iban', 'bic_swift'], // ACH demand CCD+ credit
-//     '33' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH demand CCD+ debit
-//     '34' => ['iban', 'bic_swift'], // ACH PPD
-//     '35' => ['iban', 'bic_swift'], // ACH savings CCD credit
-//     '36' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings CCD debit
-//     '37' => ['iban', 'bic_swift'], // ACH savings CTP credit
-//     '38' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings CTP debit
-//     '39' => ['iban', 'bic_swift'], // ACH savings CTX credit
-//     '40' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings CTX debit
-//     '41' => ['iban', 'bic_swift'], // ACH savings CCD+ credit
-//     '42' => ['iban', 'bic_swift'], // Payment to bank account
-//     '43' => ['payer_bank_account', 'iban', 'bic_swift'], // ACH savings CCD+ debit
-//     '44' => [], // Accepted bill of exchange
-//     '45' => ['iban', 'bic_swift'], // Referenced home-banking credit transfer
-//     '46' => ['iban', 'bic_swift'], // Interbank debit transfer
-//     '47' => ['iban', 'bic_swift'], // Home-banking debit transfer
-//     '48' => ['card_type', 'card_number'], // Bank card
-//     '49' => ['payer_bank_account', 'iban', 'bic_swift'], // Direct debit
-//     '50' => ['account_holder'], // Payment by postgiro
-//     '51' => ['iban', 'bic_swift'], // FR, norme 6 97-Telereglement CFONB
-//     '52' => ['iban', 'bic_swift'], // Urgent commercial payment
-//     '53' => ['iban', 'bic_swift'], // Urgent Treasury Payment
-//     '54' => ['card_type', 'card_number', 'card_holder'], // Credit card
-//     '55' => ['card_type', 'card_number', 'card_holder'], // Debit card
-//     '56' => ['account_holder'], // Bankgiro
-//     '57' => ['iban', 'bic_swift'], // Standing agreement
-//     '58' => ['iban', 'bic_swift'], // SEPA credit transfer
-//     '59' => ['payer_bank_account', 'iban', 'bic_swift'], // SEPA direct debit
-//     '60' => [], // Promissory note
-//     '61' => [], // Promissory note signed by debtor
-//     '62' => ['bic_swift'], // Promissory note signed by debtor and endorsed by bank
-//     '63' => [], // Promissory note signed by debtor and endorsed
-//     '64' => ['bic_swift'], // Promissory note signed by bank
-//     '65' => ['bic_swift'], // Promissory note signed by bank and endorsed by another
-//     '66' => [], // Promissory note signed by third party
-//     '67' => ['bic_swift'], // Promissory note signed by third party and endorsed by bank
-//     '68' => ['iban'], // Online payment service
-//     '69' => ['iban', 'bic_swift'], // Transfer Advice
-//     '70' => [], // Bill drawn by creditor on debtor
-//     '74' => ['bic_swift'], // Bill drawn by creditor on bank
-//     '75' => ['bic_swift'], // Bill drawn by creditor, endorsed by bank
-//     '76' => ['bic_swift'], // Bill drawn by creditor on bank and endorsed
-//     '77' => [], // Bill drawn by creditor on third party
-//     '78' => [], // Bill drawn by creditor on third party, accepted
-//     '91' => [], // Not transferable banker's draft
-//     '92' => [], // Not transferable local cheque
-//     '93' => ['iban', 'bic_swift'], // Reference giro
-//     '94' => ['iban', 'bic_swift'], // Urgent giro
-//     '95' => ['iban', 'bic_swift'], // Free format giro
-//     '96' => [], // Requested method not used
-//     '97' => ['account_holder'], // Clearing between partners
-//     'ZZZ' => [], // Mutually defined
-// ];
 
 export const PaymentMeans = forwardRef<PaymentMeansFormComponent, Props>(
   (props, ref) => {
     const colors = useColorScheme();
-    const company = useCurrentCompany();
-
     const [t] = useTranslation();
-
+    const dispatch = useDispatch();
+    const setActiveSettings = useSetAtom(activeSettingsAtom);
     const refreshCompanyUsers = useRefreshCompanyUsers();
-
+    const isClientLevel = props.entity === 'client';
     const [errors, setErrors] = useState<ValidationBag | null>(null);
+    const [hasSubmitted, setHasSubmitted] = useState(false);
+    const context = {
+      ...props.validationContext,
+      allowInheritance: isClientLevel,
+    };
+    const validationMessage = (error: PaymentMeansValidationError) =>
+      t(error.key, { defaultValue: error.message, max: error.max });
+    const unsupportedPaymentMeans = (code: string) =>
+      t('unsupported_e_invoice_payment_means', {
+        code,
+        defaultValue:
+          'Payment means {{code}} is not supported. Choose another payment means.',
+      });
+
+    const activeRequest = useRef<AbortController>();
+
+    useEffect(() => {
+      setErrors(null);
+      setHasSubmitted(false);
+      return () => activeRequest.current?.abort();
+    }, [props.entity, props.entityId]);
 
     const form = useFormik({
+      enableReinitialize: true,
       initialValues: {
         entity: props.entity,
+        entity_id: props.entityId,
         payment_means: [
-          {
-            code: '1',
-            iban: null,
-            bic_swift: '',
-            payer_bank_account: '',
-            account_holder: '',
-            bsb_sort: '',
-            card_type: '',
-            card_number: '',
-            card_holder: '',
-          },
+          readPaymentMeans(props.currentEInvoice, isClientLevel ? '' : '1'),
         ],
       },
-      onSubmit: (values, { setSubmitting }) => {
+      onSubmit: async (values) => {
+        if (activeRequest.current && !activeRequest.current.signal.aborted)
+          return;
+        if (values.entity !== 'company' && !values.entity_id) {
+          toast.error('record_not_found');
+          return;
+        }
+        const localErrors = validatePaymentMeans(
+          values.payment_means[0],
+          context
+        );
+        setHasSubmitted(true);
+        setErrors(null);
+        const firstError = Object.values(localErrors)[0];
+        if (firstError) {
+          toast.error(validationMessage(firstError));
+          return;
+        }
+
+        const controller = new AbortController();
+        activeRequest.current = controller;
         toast.processing();
         setErrors(null);
 
-        request('POST', endpoint('/api/v1/einvoice/configurations'), values)
-          .then(() => {
+        try {
+          // Capture form values before saving other settings refreshes the source.
+          await props.onBeforeSave?.();
+          if (controller.signal.aborted) return;
+
+          await request(
+            'POST',
+            endpoint('/api/v1/einvoice/configurations'),
+            {
+              entity: values.entity,
+              ...(values.entity_id ? { entity_id: values.entity_id } : {}),
+              payment_means: values.payment_means[0].code
+                ? [paymentMeansPayload(values.payment_means[0])]
+                : [],
+            },
+            { signal: controller.signal }
+          );
+
+          if (controller.signal.aborted) return;
+
+          if (isClientLevel) {
+            const response: GenericSingleResourceResponse<Client> =
+              await request(
+                'GET',
+                endpoint('/api/v1/clients/:id', { id: values.entity_id }),
+                undefined,
+                { signal: controller.signal }
+              );
+
+            if (controller.signal.aborted) return;
+
+            const client = response.data.data;
+            dispatch(
+              updateChanges({
+                object: 'company',
+                property: 'e_invoice',
+                value: client.e_invoice || {},
+              })
+            );
+            setActiveSettings((current) =>
+              current?.id === client.id
+                ? { ...current, e_invoice: client.e_invoice }
+                : current
+            );
+            $refetch(['clients']);
+          } else {
+            await refreshCompanyUsers();
+          }
+
+          if (!controller.signal.aborted)
             toast.success('saved_einvoice_details');
+        } catch (error) {
+          if (controller.signal.aborted) return;
 
-            refreshCompanyUsers();
-          })
-          .catch((error: AxiosError<ValidationBag>) => {
-            if (error.response?.status === 422) {
-              toast.dismiss();
+          // Other settings may have refreshed the source while this save failed.
+          // Keep the submitted payment fields available for correction/retry.
+          form.setValues(values);
+          const response = (error as AxiosError<ValidationBag>).response;
 
-              setErrors(error.response.data);
-
-              return;
-            }
-
+          if (response?.status === 422) {
+            toast.dismiss();
+            setErrors(response.data);
+          } else {
             toast.error();
-          })
-          .finally(() => setSubmitting(false));
+          }
+        } finally {
+          if (activeRequest.current === controller)
+            activeRequest.current = undefined;
+        }
       },
     });
 
-    useImperativeHandle(ref, () => {
-      return {
-        saveEInvoice() {
-          form.submitForm();
-        },
-      };
-    }, [form.values]);
+    useImperativeHandle(ref, () => ({ saveEInvoice: form.submitForm }));
 
-    const elements = useMemo(() => {
-      return form.values.payment_means[0].code
-        ? PAYMENT_MEANS_FORM_ELEMENTS[
-            form.values.payment_means[0]
-              .code as keyof typeof PAYMENT_MEANS_FORM_ELEMENTS
-          ] || []
-        : [];
-    }, [form.values.payment_means]);
-
-    useEffect(() => {
-      form.setFieldValue(
-        'payment_means.0.code',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PaymentMeansCode.value'
-        ) || '1'
-      );
-      form.setFieldValue(
-        'payment_means.0.iban',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PayeeFinancialAccount.ID.value'
-        ) || null
-      );
-      form.setFieldValue(
-        'payment_means.0.bic_swift',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PayeeFinancialAccount.FinancialInstitutionBranch.FinancialInstitution.ID.value'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.account_holder',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PayeeFinancialAccount.Name'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.payer_bank_account',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PayerFinancialAccount.ID.value'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.bsb_sort',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.PayeeFinancialAccount.SortCode.value'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.card_type',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.CardAccount.NetworkID.value'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.card_number',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.CardAccount.PrimaryAccountNumberID.value'
-        ) || ''
-      );
-      form.setFieldValue(
-        'payment_means.0.card_holder',
-        get(
-          company.e_invoice,
-          'Invoice.PaymentMeans.0.CardAccount.HolderName.value'
-        ) || ''
-      );
-    }, [company.e_invoice]);
+    const payment = form.values.payment_means[0];
+    const fields = getPaymentMeansFields(payment.code);
+    const requiredFields = requiredPaymentMeansFields(payment, context);
+    const localErrors = hasSubmitted
+      ? validatePaymentMeans(payment, context)
+      : {};
+    const unsupportedMessage =
+      payment.code && !PAYMENT_MEANS.some(({ code }) => code === payment.code)
+        ? unsupportedPaymentMeans(payment.code)
+        : undefined;
+    const envelopeErrors =
+      errors?.errors?.entity ||
+      errors?.errors?.entity_id ||
+      errors?.errors?.payment_means ||
+      (errors?.message && !Object.keys(errors.errors || {}).length
+        ? [errors.message]
+        : undefined);
 
     return (
       <Card
@@ -458,133 +242,96 @@ export const PaymentMeans = forwardRef<PaymentMeansFormComponent, Props>(
         style={{ borderColor: colors.$24 }}
         headerStyle={{ borderColor: colors.$20 }}
       >
-        <Element leftSide="Code">
+        {envelopeErrors && (
+          <Element>
+            <ErrorMessage>{envelopeErrors}</ErrorMessage>
+          </Element>
+        )}
+        <Element leftSide={t('payment_means')}>
           <SelectField
-            value={form.values.payment_means[0].code}
-            onValueChange={(value) =>
-              form.setFieldValue('payment_means.0.code', value)
+            value={payment.code}
+            onValueChange={(code) => {
+              setErrors(null);
+              setHasSubmitted(false);
+              form.setFieldValue(
+                'payment_means.0',
+                changePaymentMeansCode(payment, code)
+              );
+            }}
+            errorMessage={
+              unsupportedMessage || errors?.errors?.['payment_means.0.code']
             }
-            errorMessage={errors?.errors?.['payment_means.0.code']}
-            dismissable={false}
+            disabled={form.isSubmitting}
+            withBlank={isClientLevel}
+            dismissable={isClientLevel}
+            placeholder={
+              isClientLevel
+                ? t('inherit_company_payment_means', {
+                    defaultValue: 'Use company payment means',
+                  })
+                : undefined
+            }
             customSelector
           >
-            {Object.entries(PAYMENT_MEANS_CODE_LIST).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
+            {PAYMENT_MEANS.map(({ code, label }) => (
+              <option key={code} value={code}>
+                {code} — {label}
               </option>
             ))}
           </SelectField>
         </Element>
 
-        {elements.includes('iban') ? (
-          <Element leftSide={t('iban')} leftSideHelp={t('iban_help')}>
-            <InputField
-              value={form.values.payment_means[0].iban}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.iban', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.iban']}
-            />
-          </Element>
-        ) : null}
+        {fields.map((field) => {
+          const [key, defaultValue] = FIELD_LABELS[field];
+          const label =
+            (field === 'iban' && payment.code === '58') ||
+            (field === 'payer_bank_account' && payment.code === '59')
+              ? t('iban')
+              : t(key, { defaultValue });
 
-        {elements.includes('bic_swift') ? (
-          <Element leftSide={t('bic')} leftSideHelp={t('bic_swift_help')}>
-            <InputField
-              value={form.values.payment_means[0].bic_swift}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.bic_swift', value)
+          return (
+            <Element
+              key={field}
+              leftSide={label}
+              required={requiredFields.includes(field)}
+              leftSideHelp={
+                field === 'card_number' ? t('card_number_help') : undefined
               }
-              errorMessage={errors?.errors?.['payment_means.0.bic_swift']}
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('payer_bank_account') ? (
-          <Element
-            leftSide={t('payer_bank_account')}
-            leftSideHelp={t('payer_bank_account_help')}
-          >
-            <InputField
-              value={form.values.payment_means[0].payer_bank_account}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.payer_bank_account', value)
-              }
-              errorMessage={
-                errors?.errors?.['payment_means.0.payer_bank_account']
-              }
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('account_holder') ? (
-          <Element
-            leftSide={t('account_holder')}
-            leftSideHelp={t('account_holder_help')}
-          >
-            <InputField
-              value={form.values.payment_means[0].account_holder}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.account_holder', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.account_holder']}
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('bsb_sort') ? (
-          <Element leftSide={t('bsb_sort')} leftSideHelp={t('bsb_sort_help')}>
-            <InputField
-              value={form.values.payment_means[0].bsb_sort}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.bsb_sort', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.bsb_sort']}
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('card_type') ? (
-          <Element leftSide={t('card_type')} leftSideHelp={t('card_type_help')}>
-            <InputField
-              value={form.values.payment_means[0].card_type}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.card_type', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.card_type']}
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('card_number') ? (
-          <Element
-            leftSide={t('card_number')}
-            leftSideHelp={t('card_number_help')}
-          >
-            <InputField
-              value={form.values.payment_means[0].card_number}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.card_number', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.card_number']}
-            />
-          </Element>
-        ) : null}
-
-        {elements.includes('card_holder') ? (
-          <Element
-            leftSide={t('card_holder')}
-            leftSideHelp={t('card_holder_help')}
-          >
-            <InputField
-              value={form.values.payment_means[0].card_holder}
-              onValueChange={(value) =>
-                form.setFieldValue('payment_means.0.card_holder', value)
-              }
-              errorMessage={errors?.errors?.['payment_means.0.card_holder']}
-            />
-          </Element>
-        ) : null}
+            >
+              <InputField
+                id={`payment_means.0.${field}`}
+                value={payment[field]}
+                onValueChange={(value) => {
+                  setErrors(null);
+                  form.setFieldValue(`payment_means.0.${field}`, value);
+                }}
+                required={requiredFields.includes(field)}
+                maxLength={
+                  [
+                    'information',
+                    'payment_reference',
+                    'account_holder',
+                    'mandate_reference',
+                    'card_type',
+                    'card_holder',
+                  ].includes(field)
+                    ? paymentMeansFieldLimit(field, payment.code)
+                    : undefined
+                }
+                autoComplete="off"
+                changeOverride
+                debounceTimeout={0}
+                element={field === 'information' ? 'textarea' : 'input'}
+                disabled={form.isSubmitting}
+                errorMessage={
+                  localErrors[field]
+                    ? validationMessage(localErrors[field]!)
+                    : errors?.errors?.[`payment_means.0.${field}`]
+                }
+              />
+            </Element>
+          );
+        })}
       </Card>
     );
   }
